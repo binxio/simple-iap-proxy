@@ -164,7 +164,13 @@ func main() {
 			}
 	}
 
-	http.Handle("/", &ProxyHandler{proxy: proxy, target: target, tokenSource: tokenSource, renameAuthHeader: renameAuthHeader, debug: debug})
+	http.Handle("/", &ProxyHandler{
+		proxy:            proxy,
+		target:           target,
+		tokenSource:      tokenSource,
+		renameAuthHeader: renameAuthHeader,
+		debug:            debug})
+
 	if keyFile == "" {
 		err = http.ListenAndServe(":"+listenPort, nil)
 	} else {
