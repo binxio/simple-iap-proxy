@@ -1,0 +1,23 @@
+[Unit]
+Description=IAP proxy
+Requires=docker.service network-online.target
+After=docker.service network-online.target
+
+[Service]
+ExecStartPre=ctr images pull gcr.io/binx-io-public/simple-egress-proxy:0.1.1
+
+ExecStart=ctr run \
+  --rm \
+  --net-host \
+  --mount type=bind,src=/etc/ssl,dst=/etc/ssl,options=rbind:ro \
+  gcr.io/binx-io-public/simple-egress-proxy:0.1.1 iap-proxy \
+     /simple-egress-proxy --target-url ${target_url}
+
+
+SuccessExitStatus=0 2
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

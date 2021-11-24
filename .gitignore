@@ -1,0 +1,6 @@
+\.terraform/
+terraform.tfstate*
+/server.key
+/server.crt
+/.idea/
+simple-iap-proxy
