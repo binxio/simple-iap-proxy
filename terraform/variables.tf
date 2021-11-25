@@ -23,3 +23,20 @@ variable "project" {
   description = "to deploy the proxy in"
   type        = string
 }
+
+variable "accessors" {
+  description = "additional google identities allows to use the IAP proxy"
+  type        = list(string)
+  default     = []
+  validation {
+    condition     = length([for a in var.accessors : a if length(regexall("^(user:.*|group:.*|serviceAccount:.*)$", a)) == 0]) == 0
+    error_message = "Accessors must be a IAM user, group or service account."
+  }
+}
+variable "target_cluster" {
+  description = "to forward requests to"
+  type = object({
+    name     = string
+    location = string
+  })
+}

@@ -118,9 +118,9 @@ func main() {
 	flag.StringVar(&audience, "iap-audience", "", "to call a service behind the Identity Aware Proxy")
 	flag.StringVar(&certificateFile, "certificate-file", "", "for TLS")
 	flag.StringVar(&keyFile, "key-file", "", "for TLS")
-	flag.BoolVar(&insecure, "insecure", true, "allows insecure TLS connections")
-	flag.BoolVar(&renameAuthHeader, "rename-auth-header", true, "rename Authorization Header to X-Real-Authorization to workaround IAP limitation")
-	flag.BoolVar(&debug, "debug", true, "logs requests and responses")
+	flag.BoolVar(&insecure, "insecure", false, "allows insecure TLS connections")
+	flag.BoolVar(&renameAuthHeader, "rename-auth-header", false, "rename Authorization Header to X-Real-Authorization to workaround IAP limitation")
+	flag.BoolVar(&debug, "debug", false, "logs requests and responses")
 	flag.Parse()
 	if targetURL == "" {
 		log.Fatal("option -target-url is missing")

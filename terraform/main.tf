@@ -30,7 +30,7 @@ resource "google_compute_backend_service" "iap_proxy" {
   }
 
   health_checks = [
-    google_compute_health_check.iap_proxy.id
+    google_compute_health_check.iap_proxy_tcp.id
   ]
 }
 
@@ -52,7 +52,7 @@ resource "google_compute_region_instance_group_manager" "iap_proxy" {
   }
 
   auto_healing_policies {
-    health_check      = google_compute_health_check.iap_proxy.id
+    health_check      = google_compute_health_check.iap_proxy_tcp.id
     initial_delay_sec = 300
   }
 
@@ -64,16 +64,23 @@ resource "google_compute_region_instance_group_manager" "iap_proxy" {
   }
 }
 
-resource "google_compute_health_check" "iap_proxy" {
-  name                = "iap-proxy"
-  check_interval_sec  = 5
+resource "google_compute_health_check" "iap_proxy_tcp" {
+  name                = "iap-proxy-tcp"
+  check_interval_sec  = 10
   timeout_sec         = 5
   healthy_threshold   = 2
-  unhealthy_threshold = 10 # 50 seconds
+  unhealthy_threshold = 10 # 100 seconds
 
-  https_health_check {
-    request_path = "/"
-    port         = "8443"
+  tcp_health_check {
+    port = "8443"
+  }
+
+  log_config {
+    enable = true
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -144,8 +151,8 @@ resource "google_compute_firewall" "default_allow_8443_to_iap_proxy_from_lb_and_
   target_tags = ["iap-proxy"]
   source_ranges = [
     "35.235.240.0/20", ## IAP
-    "130.211.0.0/22",  ## GLB health checks
     "35.191.0.0/16",   ## GLB health checks
+    "130.211.0.0/22",  ## GLB health checks
   ]
 }
 
@@ -198,14 +205,16 @@ data "template_file" "iap_proxy_service" {
 }
 
 data "google_container_cluster" "target" {
-  name     = "cluster-1"
-  location = "europe-west4-c"
+  name     = var.target_cluster.name
+  location = var.target_cluster.location
 }
 
 locals {
   cloud_config = {
     runcmd = [
-      "c_rehash",
+      "c_rehash > /dev/null",
+      "iptables -I INPUT -p tcp --dport 8443 -j ACCEPT",
+      "i6ptables -I INPUT -p tcp --dport 8443 -j ACCEPT",
       "systemctl daemon-reload",
       "systemctl enable --now iap-proxy.service"
     ]
