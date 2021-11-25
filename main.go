@@ -97,7 +97,10 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(rec.Code)
-	rec.Body.WriteTo(w)
+	_, err := rec.Body.WriteTo(w)
+	if err != nil {
+		log.Printf("error writing body, %s", err)
+	}
 }
 
 func main() {
