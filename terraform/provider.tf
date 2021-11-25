@@ -13,7 +13,8 @@
 //   limitations under the License.
 //
 provider "google" {
-  region = "europe-west4"
+  region  = var.region
+  project = var.project
 }
 
 data "google_client_config" "current" {

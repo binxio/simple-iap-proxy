@@ -12,6 +12,28 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
+resource "google_compute_backend_service" "iap_proxy" {
+  name             = "iap-proxy"
+  description      = "IAP proxy into the VPC"
+  protocol         = "HTTPS"
+  port_name        = "iap-proxy-tls"
+  timeout_sec      = 10
+  session_affinity = "NONE"
+
+  iap {
+    oauth2_client_id     = var.oauth_client_id
+    oauth2_client_secret = var.oauth_client_secret
+  }
+
+  backend {
+    group = google_compute_region_instance_group_manager.iap_proxy.instance_group
+  }
+
+  health_checks = [
+    google_compute_health_check.iap_proxy.id
+  ]
+}
+
 resource "google_compute_region_instance_group_manager" "iap_proxy" {
   name = "iap-proxy"
 
