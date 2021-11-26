@@ -131,6 +131,21 @@ func main() {
 
 	if certificateFile != "" && keyFile == "" || keyFile != "" && certificateFile == "" {
 		log.Fatalf("both -certificate-file and -certificate-key are required.")
+	} else if keyFile != "" {
+		if s, err := os.Stat(keyFile); err != nil {
+			log.Fatalf("invalid option -key-file, %s", err)
+		} else {
+			if s.IsDir() {
+				log.Fatalf("option -key-file must be a file")
+			}
+		}
+		if s, err := os.Stat(certificateFile); err != nil {
+			log.Fatalf("invalid option -certificate-file, %s", err)
+		} else {
+			if s.IsDir() {
+				log.Fatalf("option -certificate-file must be a file")
+			}
+		}
 	}
 
 	if audience == "" {
