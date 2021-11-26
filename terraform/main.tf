@@ -188,13 +188,15 @@ resource "tls_self_signed_cert" "iap_proxy" {
     organization = "Binx.io B.V."
   }
 
-  validity_period_hours = 8760
+  validity_period_hours = 24 * 365
 
   allowed_uses = [
     "key_encipherment",
     "digital_signature",
     "server_auth",
   ]
+
+  early_renewal_hours = 24 * 30
 }
 
 data "template_file" "iap_proxy_service" {
