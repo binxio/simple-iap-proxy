@@ -3,15 +3,16 @@ Description=IAP proxy
 Requires=docker.service network-online.target
 After=docker.service network-online.target
 
+
 [Service]
-ExecStartPre=ctr images pull gcr.io/binx-io-public/simple-iap-proxy:e5f7599
+Environment="IMAGE=gcr.io/binx-io-public/simple-iap-proxy:0.2.0"
+
+ExecStartPre=ctr images pull $${IMAGE}
 
 ExecStart=ctr run \
-  --rm \
-  --net-host \
+  --rm --net-host --env PORT=8443 \
   --mount type=bind,src=/etc/ssl,dst=/etc/ssl,options=rbind:ro \
-  --env PORT=8443 \
-  gcr.io/binx-io-public/simple-iap-proxy:e5f7599 iap-proxy \
+  $${IMAGE} iap-proxy \
     /simple-iap-proxy \
      --certificate-file /etc/ssl/certs/iap-proxy.cert.pem \
      --key-file /etc/ssl/private/iap-proxy.key \
