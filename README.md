@@ -29,7 +29,7 @@ target_cluster = {
 }
 
 ## DNS managed zone accessible from the public internet
-dns_managed_zone = "google-binx-dev"
+dns_managed_zone = "my-managed-zone"
 accessors = [
     "user:markvanholsteijn@binx.io",
 ]
@@ -50,6 +50,20 @@ $ terraform init
 $ terraform apply
 ```
 
+After the apply, the required IAP proxy command is printed:
+```
+iap_proxy_command = <<EOT
+simple-iap-proxy  \
+  --rename-auth-header \
+  --target-url https://iap-proxy.my.cloud.dev \
+  --iap-audience 1234567890-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
+  --service-account iap-proxy-accessor@my-project.iam.gserviceaccount.com \
+  --certificate-file server.crt \
+  --key-file server.key
+
+EOT
+```
+
 ## start the IAP proxy
 To start the IAP proxy, you need a certificate. To generate a self-signed certificate, type:
 
@@ -62,17 +76,10 @@ $ openssl req -new -x509 -sha256 \
     -days 3650 \
     -out server.crt
 ```
-Now you can start the proxy, type:
+Now you can start the proxy, by copying the outputted command:
 
 ```shell-terminal
 $ go install github.com/binxio/simple-iap-proxy@0.2.0
-$ simple-iap-proxy \
-   --target-url $target_url \
-   --key-file server.key \
-   --certificate-file server.crt \
-   --rename-auth-header \
-   --audience $audience \
-   --service-account $service_account &
 ```
 The reason for the self-signed certificate is that kubectl will not send the credentials over HTTP.
 
