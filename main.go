@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
+	"google.golang.org/api/impersonate"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -57,7 +58,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if h.tokenSource != nil {
 		if token, err := h.tokenSource.Token(); err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Failed to obtained IAP token, %s", err), http.StatusInternalServerError)
 			return
 		} else {
 			authorization := fmt.Sprintf("%s %s", token.Type(), token.AccessToken)
@@ -109,12 +110,14 @@ func main() {
 	var renameAuthHeader bool
 	var targetURL string
 	var listenPort string
-	var audience string
 	var tokenSource oauth2.TokenSource
 	var certificateFile string
 	var keyFile string
+	var audience string
+	var serviceAccount string
 
 	flag.StringVar(&targetURL, "target-url", "", "to forward HTTP requests to")
+	flag.StringVar(&serviceAccount, "service-account", "", "to impersonate")
 	flag.StringVar(&audience, "iap-audience", "", "to call a service behind the Identity Aware Proxy")
 	flag.StringVar(&certificateFile, "certificate-file", "", "for TLS")
 	flag.StringVar(&keyFile, "key-file", "", "for TLS")
@@ -128,6 +131,10 @@ func main() {
 
 	if certificateFile != "" && keyFile == "" || keyFile != "" && certificateFile == "" {
 		log.Fatalf("both -certificate-file and -certificate-key are required.")
+	}
+
+	if audience == "" {
+		log.Fatalf("--iap-audience is required")
 	}
 
 	target, err := url.Parse(targetURL)
@@ -152,11 +159,31 @@ func main() {
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
-	if audience != "" {
-		ctx := context.Background()
-		tokenSource, err = idtoken.NewTokenSource(ctx, audience)
+	if serviceAccount != "" {
+		tokenSource, err = impersonate.IDTokenSource(context.Background(), impersonate.IDTokenConfig{
+			TargetPrincipal: serviceAccount,
+			Audience:        audience,
+			IncludeEmail:    true,
+		})
 		if err != nil {
-			log.Fatalf("failed to create a token source for audience %s\n\t %s", audience, err)
+			log.Fatalf("failed to create a token source for audience %s as %s, %s",
+				audience, serviceAccount, err)
+		}
+	} else {
+		tokenSource, err = idtoken.NewTokenSource(context.Background(), audience)
+		if err != nil {
+			log.Fatalf("failed to create a token source for audience %s, %s",
+				audience, err)
+		}
+	}
+
+	if tokenSource != nil {
+		if _, err := tokenSource.Token(); err != nil {
+			if serviceAccount != "" {
+				log.Fatalf("cannot create id token for audience %s as %s, %s", audience, serviceAccount, err)
+			} else {
+				log.Fatalf("cannot create id token for audience %s, %s", audience, err)
+			}
 		}
 	}
 

@@ -21,8 +21,8 @@ resource "google_compute_backend_service" "iap_proxy" {
   session_affinity = "NONE"
 
   iap {
-    oauth2_client_id     = var.oauth_client_id
-    oauth2_client_secret = var.oauth_client_secret
+    oauth2_client_id     = google_iap_client.iap_proxy.client_id
+    oauth2_client_secret = google_iap_client.iap_proxy.secret
   }
 
   backend {

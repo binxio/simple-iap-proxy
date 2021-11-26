@@ -3,17 +3,6 @@ variable "dns_managed_zone" {
   type        = string
 }
 
-variable "oauth_client_id" {
-  description = "IAP Oauth client id"
-  type        = string
-}
-
-variable "oauth_client_secret" {
-  description = "IAP Oauth client secret"
-  type        = string
-  sensitive   = true
-}
-
 variable "region" {
   description = "to deploy the proxy in"
   type        = string
@@ -39,4 +28,21 @@ variable "target_cluster" {
     name     = string
     location = string
   })
+}
+
+variable "iap_support_email" {
+  description = "support email address for IAP brand creation"
+  type        = string
+}
+
+output "iap_proxy_command" {
+  value = <<EOF
+simple-iap-proxy  \
+  --rename-auth-header \
+  --target-url https://iap-proxy.${trimsuffix(data.google_dns_managed_zone.tld.dns_name, ".")} \
+  --iap-audience ${google_iap_client.iap_proxy.client_id} \
+  --service-account ${google_service_account.iap_proxy_accessor.email} \
+  --certificate-file server.crt \
+  --key-file server.key
+EOF
 }
