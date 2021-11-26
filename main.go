@@ -148,10 +148,6 @@ func main() {
 		}
 	}
 
-	if audience == "" {
-		log.Fatalf("--iap-audience is required")
-	}
-
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		log.Fatalf("failed to parse target URL %s, %s", targetURL, err)
@@ -174,21 +170,23 @@ func main() {
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
-	if serviceAccount != "" {
-		tokenSource, err = impersonate.IDTokenSource(context.Background(), impersonate.IDTokenConfig{
-			TargetPrincipal: serviceAccount,
-			Audience:        audience,
-			IncludeEmail:    true,
-		})
-		if err != nil {
-			log.Fatalf("failed to create a token source for audience %s as %s, %s",
-				audience, serviceAccount, err)
-		}
-	} else {
-		tokenSource, err = idtoken.NewTokenSource(context.Background(), audience)
-		if err != nil {
-			log.Fatalf("failed to create a token source for audience %s, %s",
-				audience, err)
+	if audience != "" {
+		if serviceAccount != "" {
+			tokenSource, err = impersonate.IDTokenSource(context.Background(), impersonate.IDTokenConfig{
+				TargetPrincipal: serviceAccount,
+				Audience:        audience,
+				IncludeEmail:    true,
+			})
+			if err != nil {
+				log.Fatalf("failed to create a token source for audience %s as %s, %s",
+					audience, serviceAccount, err)
+			}
+		} else {
+			tokenSource, err = idtoken.NewTokenSource(context.Background(), audience)
+			if err != nil {
+				log.Fatalf("failed to create a token source for audience %s, %s",
+					audience, err)
+			}
 		}
 	}
 
