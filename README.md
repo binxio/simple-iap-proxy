@@ -1,4 +1,4 @@
-simple IAP proxy for accessing a private GKE mater control plane
+simple IAP proxy for accessing a private GKE master control plane
 =================================================================
 GKE CIS security control 6.6.4 requires clusters to be created with private endpoint enabled
 and public access disabled. When public access is disabled, CI/CD pipelines which need
