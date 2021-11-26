@@ -30,6 +30,8 @@ target_cluster = {
 
 ## DNS managed zone accessible from the public internet
 dns_managed_zone = "my-managed-zone"
+
+## users you want to grant access via the IAP proxy
 accessors = [
     "user:markvanholsteijn@binx.io",
 ]
@@ -80,6 +82,7 @@ Now you can start the proxy, by copying the outputted command:
 
 ```shell-terminal
 $ go install github.com/binxio/simple-iap-proxy@0.2.0
+$ terraform output -raw iap_proxy_command | sh
 ```
 The reason for the self-signed certificate is that kubectl will not send the credentials over HTTP.
 
