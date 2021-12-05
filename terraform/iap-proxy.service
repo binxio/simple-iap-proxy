@@ -5,21 +5,18 @@ After=docker.service network-online.target
 
 
 [Service]
-Environment="IMAGE=gcr.io/binx-io-public/simple-iap-proxy:0.2.1"
+Environment="IMAGE=gcr.io/binx-io-public/simple-iap-proxy:62785e9"
 
-ExecStartPre=ctr images pull $${IMAGE}
+ExecStartPre=ctr images pull ${IMAGE}
 
 ExecStart=ctr run \
-  --rm --net-host --env PORT=8443 \
+  --rm --net-host \
   --mount type=bind,src=/etc/ssl,dst=/etc/ssl,options=rbind:ro \
-  $${IMAGE} iap-proxy \
-    /simple-iap-proxy \
+  ${IMAGE} iap-proxy \
+    /simple-iap-proxy server\
      --certificate-file /etc/ssl/certs/iap-proxy.cert.pem \
      --key-file /etc/ssl/private/iap-proxy.key \
-     --rename-auth-header \
-     --target-url ${target_url}
-
-
+     --port 8443
 
 SuccessExitStatus=0 2
 Restart=always

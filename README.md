@@ -22,12 +22,6 @@ To configure your deployment, create a file `.auto.tfvars` with the following co
 project = "my-project"
 region = "europe-west4"
 
-# target cluster to forward the requests to
-target_cluster = {
-    name = "cluster-1"
-    location = "europe-west4-c"
-}
-
 ## DNS managed zone accessible from the public internet
 dns_managed_zone = "my-managed-zone"
 
@@ -55,13 +49,10 @@ $ terraform apply
 After the apply, the required IAP proxy command is printed:
 ```
 iap_proxy_command = <<EOT
-simple-iap-proxy  \
-  --rename-auth-header \
-  --target-url https://iap-proxy.my.cloud.dev \
-  --iap-audience 1234567890-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
-  --service-account iap-proxy-accessor@my-project.iam.gserviceaccount.com \
-  --certificate-file server.crt \
-  --key-file server.key
+simple-iap-proxy client \
+  --target-url https://iap-proxy.google.binx.dev \
+  --iap-audience 712731707077-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
+  --service-account iap-proxy-accessor@speeltuin-mvanholsteijn.iam.gserviceaccount.com
 
 EOT
 ```
@@ -78,6 +69,14 @@ $ openssl req -new -x509 -sha256 \
     -days 3650 \
     -out server.crt
 ```
+
+To trust the proxy, type:
+
+```
+sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ./server.crt
+```
+
+ 
 Now you can start the proxy, by copying the outputted command:
 
 ```shell-terminal
@@ -100,9 +99,10 @@ To configure the kubectl access via the IAP proxy, type:
 ```$shell-terminal
 gcloud container clusters \
    get-credentials cluster-1
+   
 context_name=$(kubectl config current-context)
 kubectl config set clusters.$context_name.certificate-authority-data $(base64 < server.crt)
-kubectl config set clusters.$context_name.server https://localhost:8443
+kubectl config set clusters.$context_name.proxy-url https://localhost:8080
 ```
 
 This points the context to the proxy and configure the self-signed certificate for the server.
@@ -115,5 +115,5 @@ $ kubectl cluster-info dump
 ```
 
 ## todo
-- support proxying to multiple k8s clusters in the project
+- upgrading to websockets is not supported (ie kubectl exec)
 - deploy across multiple regions

@@ -86,7 +86,7 @@ resource "google_compute_health_check" "iap_proxy_tcp" {
 
 resource "google_compute_instance_template" "iap_proxy" {
   name_prefix  = "iap-proxy-"
-  machine_type = "e2-micro"
+  machine_type = "n2-standard-2"
   region       = data.google_client_config.current.region
 
   disk {
@@ -161,15 +161,14 @@ resource "google_service_account" "iap_proxy" {
   display_name = "IAP proxy"
 }
 
-resource "google_project_iam_member" "iap_proxy_sa_log_writer" {
+resource "google_project_iam_member" "iap_proxy_sa" {
+  for_each = { for r in [
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/container.clusterViewer",
+  ] : r => r }
   member  = format("serviceAccount:%s", google_service_account.iap_proxy.email)
-  role    = "roles/logging.logWriter"
-  project = data.google_client_config.current.project
-}
-
-resource "google_project_iam_member" "iap_proxy_sa_metric_writer" {
-  role    = "roles/monitoring.metricWriter"
-  member  = format("serviceAccount:%s", google_service_account.iap_proxy.email)
+  role    = each.key
   project = data.google_client_config.current.project
 }
 
@@ -199,24 +198,12 @@ resource "tls_self_signed_cert" "iap_proxy" {
   early_renewal_hours = 24 * 30
 }
 
-data "template_file" "iap_proxy_service" {
-  template = file("${path.module}/iap-proxy.service")
-  vars = {
-    target_url = format("https://%s", data.google_container_cluster.target.endpoint)
-  }
-}
-
-data "google_container_cluster" "target" {
-  name     = var.target_cluster.name
-  location = var.target_cluster.location
-}
-
 locals {
   cloud_config = {
     runcmd = [
       "c_rehash > /dev/null",
-      "iptables -I INPUT -p tcp --dport 8443 -j ACCEPT",
-      "i6ptables -I INPUT -p tcp --dport 8443 -j ACCEPT",
+      "iptables -I INPUT -p tcp -j ACCEPT",
+      "i6ptables -I INPUT -p tcp -j ACCEPT",
       "systemctl daemon-reload",
       "systemctl enable --now iap-proxy.service"
     ]
@@ -237,13 +224,7 @@ locals {
       path        = "/etc/systemd/system/iap-proxy.service"
       permissions = "0644"
       owner       = "root:root"
-      content     = data.template_file.iap_proxy_service.rendered
-      }, {
-      path        = format("/etc/ssl/certs/gke-%s.cert.pem", data.google_container_cluster.target.name)
-      owner       = "root:root"
-      permissions = "0644"
-      encoding    = "base64"
-      content     = data.google_container_cluster.target.master_auth[0].cluster_ca_certificate
+      content     = file("${path.module}/iap-proxy.service")
       },
     ]
   }

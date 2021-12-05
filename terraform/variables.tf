@@ -8,14 +8,6 @@ variable "region" {
   type        = string
 }
 
-variable "target_cluster" {
-  description = "target GKE cluster to forward requests to"
-  type = object({
-    name     = string
-    location = string
-  })
-}
-
 variable "accessors" {
   description = "list of google user ids allowed to use the IAP proxy"
   type        = list(string)
