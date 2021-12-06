@@ -1,17 +1,16 @@
 package cmd
 
 import (
-	"github.com/binxio/simple-iap-proxy/server"
+	"github.com/binxio/simple-iap-proxy/gke_server"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	serverCmd.MarkFlagRequired("key-file")
-	serverCmd.MarkFlagRequired("certificate-file")
+	gkeServerCmd.Flags().SortFlags = false
 }
 
-var serverCmd = &cobra.Command{
-	Use:   "server",
+var gkeServerCmd = &cobra.Command{
+	Use:   "gke-server",
 	Short: "forwards requests from the load balancer to the appropriate GKE cluster",
 	Long: `reads the Host header of the http requests and if
   it matches the ip address of GKE cluster master endpoint, forwards the request to it.
@@ -19,7 +18,7 @@ var serverCmd = &cobra.Command{
 	TraverseChildren: true,
 	Args:             validateRootArguments,
 	Run: func(cmd *cobra.Command, args []string) {
-		s := server.ReverseProxy{
+		s := gke_server.ReverseProxy{
 			Debug:           debug,
 			Port:            port,
 			ProjectID:       projectID,

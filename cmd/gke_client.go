@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/binxio/simple-iap-proxy/client"
+	"github.com/binxio/simple-iap-proxy/gke_client"
 	"github.com/spf13/cobra"
 	"log"
 	"net/url"
@@ -22,31 +22,34 @@ func validateClientArguments(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("specify either --use-default-credentials or --configuration, not both")
 	}
 
-	if u, err := url.Parse(targetURL); err != nil {
+	u, err := url.Parse(targetURL)
+	if err != nil {
 		return fmt.Errorf("invalid target-url %s, %s", targetURL, err)
-	} else {
-		if u.Scheme != "https" {
-			return fmt.Errorf("target-url must be https")
-		}
+	}
+
+	if u.Scheme != "https" {
+		return fmt.Errorf("target-url must be https")
 	}
 
 	return validateRootArguments(cmd, args)
 }
 
 func init() {
-	clientCmd.Flags().StringVarP(&targetURL, "target-url", "t", "", "to forward requests to")
-	clientCmd.Flags().StringVarP(&audience, "iap-audience", "a", "", "of the IAP application")
-	clientCmd.Flags().StringVarP(&serviceAccount, "service-account", "s", "", "to impersonate")
-	clientCmd.Flags().BoolVarP(&useDefaultCredentials, "use-default-credentials", "u", false, "use default credentials instead of gcloud configuration")
-	clientCmd.Flags().StringVarP(&configurationName, "configuration", "C", "", "name of gcloud configuration to use for credentials")
-	clientCmd.MarkFlagRequired("iap-audience")
-	clientCmd.MarkFlagRequired("service-account")
-	clientCmd.MarkFlagRequired("target-url")
-	clientCmd.Flags().SortFlags = false
+	gkeClientCmd.Flags().StringVarP(&targetURL, "target-url", "t", "", "to forward requests to")
+	gkeClientCmd.Flags().StringVarP(&audience, "iap-audience", "a", "", "of the IAP application")
+	gkeClientCmd.Flags().StringVarP(&serviceAccount, "service-account", "s", "", "to impersonate")
+	gkeClientCmd.Flags().BoolVarP(&useDefaultCredentials, "use-default-credentials", "u", false, "use default credentials instead of gcloud configuration")
+	gkeClientCmd.Flags().StringVarP(&configurationName, "configuration", "C", "", "name of gcloud configuration to use for credentials")
+	if err := gkeClientCmd.MarkFlagRequired("iap-audience"); err != nil {
+		log.Fatal(err)
+	}
+	gkeClientCmd.MarkFlagRequired("service-account")
+	gkeClientCmd.MarkFlagRequired("target-url")
+	gkeClientCmd.Flags().SortFlags = false
 }
 
-var clientCmd = &cobra.Command{
-	Use:   "client",
+var gkeClientCmd = &cobra.Command{
+	Use:   "gke-client",
 	Short: "starts a client side proxy, forwarding requests to the GKE cluster via the IAP",
 	Long: `The client will start a real HTTP/S proxy and forward any requests for
 ip address of GKE cluster master endpoints, to the IAP proxy.
@@ -54,17 +57,17 @@ ip address of GKE cluster master endpoints, to the IAP proxy.
 	Args: validateClientArguments,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
-		if keyFile != "" {
-			certificate, err = loadCertificate(keyFile)
-			if err != nil {
-				log.Fatal(err)
-			}
+
+		certificate, err = loadCertificate(keyFile)
+		if err != nil {
+			log.Fatal(err)
 		}
-		c := client.Proxy{
+
+		c := gke_client.Proxy{
 			Debug:                 debug,
 			Port:                  port,
 			ServiceAccount:        serviceAccount,
-			ProjectId:             projectID,
+			ProjectID:             projectID,
 			UseDefaultCredentials: useDefaultCredentials,
 			ConfigurationName:     configurationName,
 			Audience:              audience,

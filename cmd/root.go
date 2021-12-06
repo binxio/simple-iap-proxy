@@ -26,10 +26,12 @@ with a private master IP address via an IAP proxy. It consists of
 a proxy which can be run on the client side, and a reverse-proxy which
 is run inside the VPC.
 `,
+
 		Args: validateRootArguments,
 	}
 )
 
+// Execute the main command
 func Execute() error {
 	return rootCmd.Execute()
 }
@@ -70,15 +72,8 @@ func loadCertificate(keyFile string) (*tls.Certificate, error) {
 }
 
 func validateRootArguments(_ *cobra.Command, _ []string) error {
-	// mis-using the positional argument validator here.
-	if certificateFile != "" && keyFile == "" || keyFile != "" && certificateFile == "" {
-		return fmt.Errorf("both --certificate-file and --key-file are required.")
-	}
-
-	if keyFile != "" {
-		if _, err := loadCertificate(keyFile); err != nil {
-			return err
-		}
+	if _, err := loadCertificate(keyFile); err != nil {
+		return err
 	}
 
 	return nil
@@ -92,8 +87,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&certificateFile, "certificate-file", "c", "", "certificate of the server")
 	rootCmd.MarkFlagFilename("key-file")
 	rootCmd.MarkFlagFilename("certificate-file")
+	rootCmd.MarkFlagRequired("key-file")
+	rootCmd.MarkFlagRequired("certificate-file")
+	rootCmd.PersistentFlags().SortFlags = false
 
-	rootCmd.AddCommand(clientCmd)
-	rootCmd.AddCommand(serverCmd)
-	rootCmd.Flags().SortFlags = false
+	rootCmd.AddCommand(gkeClientCmd)
+	rootCmd.AddCommand(gkeServerCmd)
 }

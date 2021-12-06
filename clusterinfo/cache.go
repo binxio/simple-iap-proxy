@@ -14,30 +14,33 @@ import (
 	"time"
 )
 
-type ClusterInfo struct {
+// ConnectInfo provides basie GKE cluster connect information
+type ConnectInfo struct {
 	Name                 string
 	Endpoint             string
 	ClusterCaCertificate string
 	RootCAs              *x509.CertPool
 }
 
-// map from endpoint to name and certificate
-type ClusterInfoMap map[string]*ClusterInfo
+// Map provides a lookup for cluster connection information base on the hostname
+type Map map[string]*ConnectInfo
 
-type ClusterInfoCache struct {
+// Cache provides access to a cached cluster information map
+type Cache struct {
 	ctx         context.Context
-	projectId   string
+	projectID   string
 	credentials *google.Credentials
 	refresh     time.Duration
-	clusterInfo *ClusterInfoMap
+	clusterInfo *Map
 	mutex       sync.Mutex
 }
 
-func NewClusterInfoCache(ctx context.Context, projectId string, credentials *google.Credentials, refresh time.Duration) (*ClusterInfoCache, error) {
-	cache := &ClusterInfoCache{
+// NewCache creates a cluster info cache which is refreshed every `refresh`
+func NewCache(ctx context.Context, projectID string, credentials *google.Credentials, refresh time.Duration) (*Cache, error) {
+	cache := &Cache{
 		ctx:         ctx,
 		credentials: credentials,
-		projectId:   projectId,
+		projectID:   projectID,
 		refresh:     refresh,
 	}
 	clusterInfo, err := cache.retrieveClusters()
@@ -49,34 +52,34 @@ func NewClusterInfoCache(ctx context.Context, projectId string, credentials *goo
 	return cache, nil
 }
 
-func (c *ClusterInfoCache) GetClusterInfoForEndpoint(endpoint string) *ClusterInfo {
+// GetConnectInfoForEndpoint returns connect information for the host, or nil if not found
+func (c *Cache) GetConnectInfoForEndpoint(endpoint string) *ConnectInfo {
 	host := strings.Split(endpoint, ":")
 	if r, ok := (*c.clusterInfo)[host[0]]; ok {
 		return r
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // thread safe get cluster info
-func (c *ClusterInfoCache) getClusterInfo() *ClusterInfoMap {
+func (c *Cache) getClusterInfo() *Map {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.clusterInfo
 }
 
 // thread safe set cluster info
-func (c *ClusterInfoCache) setClusterInfo(m *ClusterInfoMap) {
+func (c *Cache) setClusterInfo(m *Map) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.clusterInfo = m
 }
 
-// returns a copy of the cluster info map
-func (c *ClusterInfoCache) GetClusterInfo() *ClusterInfoMap {
-	result := make(ClusterInfoMap)
+// GetMap returns a copy of the cluster info map
+func (c *Cache) GetMap() *Map {
+	result := make(Map)
 	for k, v := range *c.getClusterInfo() {
-		result[k] = &ClusterInfo{
+		result[k] = &ConnectInfo{
 			Endpoint:             v.Endpoint,
 			Name:                 v.Name,
 			ClusterCaCertificate: v.ClusterCaCertificate,
@@ -86,7 +89,7 @@ func (c *ClusterInfoCache) GetClusterInfo() *ClusterInfoMap {
 	return &result
 }
 
-func (c *ClusterInfoCache) run() {
+func (c *Cache) run() {
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -117,15 +120,15 @@ func createCertPool(name string, clusterCaCertificate string) *x509.CertPool {
 	return result
 }
 
-func (c *ClusterInfoCache) retrieveClusters() (*ClusterInfoMap, error) {
-	result := make(ClusterInfoMap)
+func (c *Cache) retrieveClusters() (*Map, error) {
+	result := make(Map)
 
 	service, err := container.NewService(c.ctx,
 		option.WithTokenSource(c.credentials.TokenSource))
 	if err != nil {
 		return nil, err
 	}
-	parent := fmt.Sprintf("projects/%s/locations/-", c.projectId)
+	parent := fmt.Sprintf("projects/%s/locations/-", c.projectID)
 	response, err := service.Projects.Locations.Clusters.List(parent).Do()
 	if err != nil {
 		return nil, err
@@ -135,7 +138,7 @@ func (c *ClusterInfoCache) retrieveClusters() (*ClusterInfoMap, error) {
 			log.Printf("INFO: skipping cluster %s in status %s", cluster.Name, cluster.Status)
 			continue
 		}
-		result[cluster.Endpoint] = &ClusterInfo{
+		result[cluster.Endpoint] = &ConnectInfo{
 			Name:                 cluster.Name,
 			Endpoint:             cluster.Endpoint,
 			ClusterCaCertificate: cluster.MasterAuth.ClusterCaCertificate,

@@ -1,4 +1,4 @@
-package client
+package gke_client
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// function copied from httputil.reverseproxy.go
+// SingleJoiningSlash function copied from httputil.reverseproxy.go
 func SingleJoiningSlash(a, b string) string {
 	aslash := strings.HasSuffix(a, "/")
 	bslash := strings.HasPrefix(b, "/")
@@ -19,7 +19,7 @@ func SingleJoiningSlash(a, b string) string {
 	return a + b
 }
 
-// function copied from httputil.reverseproxy.go
+// JoinURLPath function copied from httputil.reverseproxy.go
 func JoinURLPath(a, b *url.URL) (path, rawpath string) {
 	if a.RawPath == "" && b.RawPath == "" {
 		return SingleJoiningSlash(a.Path, b.Path), ""
@@ -41,6 +41,7 @@ func JoinURLPath(a, b *url.URL) (path, rawpath string) {
 	return a.Path + b.Path, apath + bpath
 }
 
+// RewriteRequestURL rewrites the `req` URL so that it can be forwarded to `target`
 func RewriteRequestURL(req *http.Request, target *url.URL) {
 	targetQuery := target.RawQuery
 	req.URL.Scheme = target.Scheme

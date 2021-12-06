@@ -16,12 +16,12 @@ func TestListClusters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cache, err := NewClusterInfoCache(ctx, creds.ProjectID, creds, time.Second)
+	cache, err := NewCache(ctx, creds.ProjectID, creds, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	clusters := cache.GetClusterInfo()
+	clusters := cache.GetMap()
 	if len(*clusters) == 0 {
 		t.Fatalf("expected at least 1 cluster, found none")
 	}

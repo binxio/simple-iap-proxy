@@ -13,7 +13,7 @@ ExecStart=ctr run \
   --rm --net-host \
   --mount type=bind,src=/etc/ssl,dst=/etc/ssl,options=rbind:ro \
   ${IMAGE} iap-proxy \
-    /simple-iap-proxy server\
+    /simple-iap-proxy gke-server \
      --certificate-file /etc/ssl/certs/iap-proxy.cert.pem \
      --key-file /etc/ssl/private/iap-proxy.key \
      --port 8443

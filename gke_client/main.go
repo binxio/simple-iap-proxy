@@ -1,4 +1,4 @@
-package client
+package gke_client
 
 import (
 	"context"
@@ -17,10 +17,11 @@ import (
 	"time"
 )
 
+// Proxy provides the runtime configuration of the GKE Proxy
 type Proxy struct {
 	Debug                 bool
 	Port                  int
-	ProjectId             string
+	ProjectID             string
 	KeyFile               string
 	CertificateFile       string
 	Certificate           *tls.Certificate
@@ -33,7 +34,7 @@ type Proxy struct {
 	targetURL        *url.URL
 	credentials      *google.Credentials
 	tokenSource      oauth2.TokenSource
-	clusterInfoCache *clusterinfo.ClusterInfoCache
+	clusterInfoCache *clusterinfo.Cache
 }
 
 func (p *Proxy) getCredentials(ctx context.Context) error {
@@ -47,20 +48,23 @@ func (p *Proxy) getCredentials(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to obtain credentials, %s", err)
 	}
-	if p.ProjectId == "" {
-		p.ProjectId = p.credentials.ProjectID
+	if p.ProjectID == "" {
+		p.ProjectID = p.credentials.ProjectID
 	}
-	if p.ProjectId == "" {
-		fmt.Errorf("specify a --project as there is no default one")
+	if p.ProjectID == "" {
+		return fmt.Errorf("specify a --project as there is no default one")
 	}
 	return nil
 }
 
+// IsClusterEndpoint return true if the request is targeting an GKE cluster endpoint
 func (p *Proxy) IsClusterEndpoint() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-		return p.clusterInfoCache.GetClusterInfoForEndpoint(req.URL.Host) != nil
+		return p.clusterInfoCache.GetConnectInfoForEndpoint(req.URL.Host) != nil
 	}
 }
+
+// OnRequest inserts the IAP required token and renames an existing Authorization header
 func (p *Proxy) OnRequest(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 	log.Printf("on request to %s", r.URL)
 
@@ -92,31 +96,30 @@ func (p *Proxy) createProxy() *goproxy.ProxyHttpServer {
 	proxy.OnRequest(p.IsClusterEndpoint()).HandleConnect(goproxy.AlwaysMitm)
 	proxy.OnRequest(p.IsClusterEndpoint()).DoFunc(p.OnRequest)
 
-	if p.Certificate != nil {
+	goproxy.GoproxyCa = *p.Certificate
+	tlsConfig := goproxy.TLSConfigFromCA(p.Certificate)
 
-		goproxy.GoproxyCa = *p.Certificate
-		tlsConfig := goproxy.TLSConfigFromCA(p.Certificate)
-
-		goproxy.OkConnect = &goproxy.ConnectAction{
-			Action:    goproxy.ConnectAccept,
-			TLSConfig: tlsConfig,
-		}
-		goproxy.MitmConnect = &goproxy.ConnectAction{
-			Action:    goproxy.ConnectMitm,
-			TLSConfig: tlsConfig,
-		}
-		goproxy.HTTPMitmConnect = &goproxy.ConnectAction{
-			Action:    goproxy.ConnectHTTPMitm,
-			TLSConfig: tlsConfig,
-		}
-		goproxy.RejectConnect = &goproxy.ConnectAction{
-			Action:    goproxy.ConnectReject,
-			TLSConfig: tlsConfig,
-		}
+	goproxy.OkConnect = &goproxy.ConnectAction{
+		Action:    goproxy.ConnectAccept,
+		TLSConfig: tlsConfig,
 	}
+	goproxy.MitmConnect = &goproxy.ConnectAction{
+		Action:    goproxy.ConnectMitm,
+		TLSConfig: tlsConfig,
+	}
+	goproxy.HTTPMitmConnect = &goproxy.ConnectAction{
+		Action:    goproxy.ConnectHTTPMitm,
+		TLSConfig: tlsConfig,
+	}
+	goproxy.RejectConnect = &goproxy.ConnectAction{
+		Action:    goproxy.ConnectReject,
+		TLSConfig: tlsConfig,
+	}
+
 	return proxy
 }
 
+// Run the proxy until stopped
 func (p *Proxy) Run() {
 	var err error
 
@@ -132,7 +135,7 @@ func (p *Proxy) Run() {
 		log.Fatalf("%s", err)
 	}
 
-	p.clusterInfoCache, err = clusterinfo.NewClusterInfoCache(ctx, p.ProjectId, p.credentials, 5*time.Minute)
+	p.clusterInfoCache, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
@@ -155,11 +158,8 @@ func (p *Proxy) Run() {
 		Addr:         fmt.Sprintf(":%d", p.Port),
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
-	if p.KeyFile == "" {
-		err = srv.ListenAndServe()
-	} else {
-		err = srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
-	}
+
+	err = srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package server
+package gke_server
 
 import (
 	"context"
@@ -14,13 +14,14 @@ import (
 	"time"
 )
 
+// ReverseProxy provides the runtime configuration of the Reverse Proxy
 type ReverseProxy struct {
 	Debug            bool
 	Port             int
 	ProjectID        string
 	KeyFile          string
 	CertificateFile  string
-	clusterInfoCache *clusterinfo.ClusterInfoCache
+	clusterInfoCache *clusterinfo.Cache
 }
 
 func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
@@ -36,13 +37,13 @@ func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
 		return fmt.Errorf("specify a --project as there is no default one")
 	}
 
-	p.clusterInfoCache, err = clusterinfo.NewClusterInfoCache(ctx, p.ProjectID, credentials, 5*time.Minute)
+	p.clusterInfoCache, err = clusterinfo.NewCache(ctx, p.ProjectID, credentials, 5*time.Minute)
 	return err
 }
 
-func (h *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	clusterInfo := h.clusterInfoCache.GetClusterInfoForEndpoint(r.Host)
+	clusterInfo := p.clusterInfoCache.GetConnectInfoForEndpoint(r.Host)
 	if clusterInfo == nil {
 		w.WriteHeader(http.StatusBadGateway)
 		w.Write([]byte(fmt.Sprintf("%s is not a cluster endpoint", r.Host)))
@@ -70,7 +71,7 @@ func (h *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if h.Debug {
+	if p.Debug {
 		x, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			log.Printf("failed to dump the response body, %s", err)
@@ -82,7 +83,7 @@ func (h *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rec := httptest.NewRecorder()
 	proxy.ServeHTTP(rec, r)
 
-	if h.Debug {
+	if p.Debug {
 		x, err := httputil.DumpResponse(rec.Result(), true)
 		if err != nil {
 			log.Printf("failed to dump the response body, %s", err)
@@ -104,6 +105,7 @@ func (h *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Run the reverse proxy until stopped
 func (p *ReverseProxy) Run() {
 	var err error
 
@@ -115,12 +117,12 @@ func (p *ReverseProxy) Run() {
 	}
 
 	http.Handle("/", p)
-
-	if p.KeyFile == "" {
-		err = http.ListenAndServe(fmt.Sprintf(":%d", p.Port), nil)
-	} else {
-		err = http.ListenAndServeTLS(fmt.Sprintf(":%d", p.Port), p.CertificateFile, p.KeyFile, nil)
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", p.Port),
+		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
+
+	err = srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
 	if err != nil {
 		log.Fatalf("failed to start server, %s", err)
 	}
