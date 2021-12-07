@@ -8,7 +8,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
 	"time"
@@ -16,12 +15,12 @@ import (
 
 // ReverseProxy provides the runtime configuration of the Reverse Proxy
 type ReverseProxy struct {
-	Debug            bool
-	Port             int
-	ProjectID        string
-	KeyFile          string
-	CertificateFile  string
-	clusterInfoCache *clusterinfo.Cache
+	Debug           bool
+	Port            int
+	ProjectID       string
+	KeyFile         string
+	CertificateFile string
+	clusterInfo     *clusterinfo.Cache
 }
 
 func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
@@ -37,13 +36,13 @@ func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
 		return fmt.Errorf("specify a --project as there is no default one")
 	}
 
-	p.clusterInfoCache, err = clusterinfo.NewCache(ctx, p.ProjectID, credentials, 5*time.Minute)
+	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, credentials, 5*time.Minute)
 	return err
 }
 
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	clusterInfo := p.clusterInfoCache.GetConnectInfoForEndpoint(r.Host)
+	clusterInfo := p.clusterInfo.GetConnectInfoForEndpoint(r.Host)
 	if clusterInfo == nil {
 		w.WriteHeader(http.StatusBadGateway)
 		w.Write([]byte(fmt.Sprintf("%s is not a cluster endpoint", r.Host)))
@@ -71,38 +70,7 @@ func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if p.Debug {
-		x, err := httputil.DumpRequest(r, true)
-		if err != nil {
-			log.Printf("failed to dump the response body, %s", err)
-		} else {
-			log.Println(fmt.Sprintf("%q", x))
-		}
-	}
-
-	rec := httptest.NewRecorder()
-	proxy.ServeHTTP(rec, r)
-
-	if p.Debug {
-		x, err := httputil.DumpResponse(rec.Result(), true)
-		if err != nil {
-			log.Printf("failed to dump the response body, %s", err)
-		} else {
-			log.Println(fmt.Sprintf("%q", x))
-		}
-	}
-
-	for key, values := range rec.Header() {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
-	}
-
-	w.WriteHeader(rec.Code)
-	_, err = rec.Body.WriteTo(w)
-	if err != nil {
-		log.Printf("error writing body, %s", err)
-	}
+	proxy.ServeHTTP(w, r)
 }
 
 // Run the reverse proxy until stopped

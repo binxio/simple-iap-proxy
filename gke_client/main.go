@@ -30,11 +30,11 @@ type Proxy struct {
 	ConfigurationName     string
 	UseDefaultCredentials bool
 
-	TargetURL        string
-	targetURL        *url.URL
-	credentials      *google.Credentials
-	tokenSource      oauth2.TokenSource
-	clusterInfoCache *clusterinfo.Cache
+	TargetURL   string
+	targetURL   *url.URL
+	credentials *google.Credentials
+	tokenSource oauth2.TokenSource
+	clusterInfo *clusterinfo.Cache
 }
 
 func (p *Proxy) getCredentials(ctx context.Context) error {
@@ -60,7 +60,7 @@ func (p *Proxy) getCredentials(ctx context.Context) error {
 // IsClusterEndpoint return true if the request is targeting an GKE cluster endpoint
 func (p *Proxy) IsClusterEndpoint() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-		return p.clusterInfoCache.GetConnectInfoForEndpoint(req.URL.Host) != nil
+		return p.clusterInfo.GetConnectInfoForEndpoint(req.URL.Host) != nil
 	}
 }
 
@@ -135,7 +135,7 @@ func (p *Proxy) Run() {
 		log.Fatalf("%s", err)
 	}
 
-	p.clusterInfoCache, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
+	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
