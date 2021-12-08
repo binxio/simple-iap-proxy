@@ -39,20 +39,22 @@ iap_support_email = "markvanholsteijn@binx.io"
 ## deploying the IAP proxy
 To deploy the IAP proxy for GKE, type:
 
-```
-$ git clone https://github.com/binxio/simple-iap-proxy.git
-$ cp .auto.tfvars simple-iap-proxy/terraform
-$ terraform init
-$ terraform apply
+```sh
+git clone https://github.com/binxio/simple-iap-proxy.git
+cp .auto.tfvars simple-iap-proxy/terraform
+terraform init
+terraform apply
 ```
 
 After the apply, the required IAP proxy command is printed:
 ```
 iap_proxy_command = <<EOT
-simple-iap-proxy client \
+simple-iap-proxy gke-client \
   --target-url https://iap-proxy.google.binx.dev \
   --iap-audience 712731707077-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
-  --service-account iap-proxy-accessor@speeltuin-mvanholsteijn.iam.gserviceaccount.com
+  --service-account iap-proxy-accessor@speeltuin-mvanholsteijn.iam.gserviceaccount.com \
+  --key-file server.key \
+  --certificate-file server.crt
 
 EOT
 ```
@@ -60,9 +62,9 @@ EOT
 ## start the IAP proxy
 To start the IAP proxy, you need a certificate. To generate a self-signed certificate, type:
 
-```shell-terminal
-$ openssl genrsa -out server.key 2048
-$ openssl req -new -x509 -sha256 \
+```bash
+openssl genrsa -out server.key 2048
+openssl req -new -x509 -sha256 \
     -key server.key \
     -subj "/CN=localhost" \
     -addext "subjectAltName = DNS:localhost" \
@@ -70,16 +72,23 @@ $ openssl req -new -x509 -sha256 \
     -out server.crt
 ```
 
-To trust the proxy, type:
+To trust the proxy, you add the certificate to the trust store. On MacOs, type:
 
-```
+```bash
 sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ./server.crt
+```
+
+On Linux, type:
+
+```sh
+cp server.crt /etc/ssl/certs/
+c_rehash
 ```
 
  
 Now you can start the proxy, by copying the outputted command:
 
-```shell-terminal
+```sh
 $ go install github.com/binxio/simple-iap-proxy@0.2.0
 $ terraform output -raw iap_proxy_command | sh
 ```
@@ -88,7 +97,7 @@ The reason for the self-signed certificate is that kubectl will not send the cre
 ## get credentials for your cluster
 To get the credentials for your cluster, type:
 
-```shell-terminal
+```sh
 $ gcloud container clusters \
    get-credentials cluster-1
 ````
@@ -96,7 +105,7 @@ $ gcloud container clusters \
 ## configure kubectl access via IAP proxy
 To configure the kubectl access via the IAP proxy, type:
 
-```$shell-terminal
+```sh
 gcloud container clusters \
    get-credentials cluster-1
    
@@ -110,10 +119,12 @@ This points the context to the proxy and configure the self-signed certificate f
 ## use kubectl over IAP
 Now you can use kubectl over IAP!
 
-```shell-terminal
+```sh
 $ kubectl cluster-info dump
 ```
 
-## todo
-- upgrading to websockets is not supported (ie kubectl exec)
-- deploy across multiple regions
+## Caveats
+- The IAP protocol does not support websockets as Authorization header cannot be passed in. Commands which rely
+  on websockets will fail (ie kubectl exec).
+- the --debug flag is not very verbose.
+- The proxy has not been tested yet in the field, so I am happy to hear your feedback!
