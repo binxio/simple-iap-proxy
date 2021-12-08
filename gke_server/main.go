@@ -39,6 +39,10 @@ func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
 	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, credentials, 5*time.Minute)
 	return err
 }
+func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintf(w, "service is healthy\n")
+}
 
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -85,6 +89,8 @@ func (p *ReverseProxy) Run() {
 	}
 
 	http.Handle("/", p)
+	http.HandleFunc("/__health", healthCheckHandler)
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", p.Port),
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),

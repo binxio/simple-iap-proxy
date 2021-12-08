@@ -30,7 +30,7 @@ resource "google_compute_backend_service" "iap_proxy" {
   }
 
   health_checks = [
-    google_compute_health_check.iap_proxy_tcp.id
+    google_compute_health_check.iap_proxy_https.id
   ]
 }
 
@@ -52,7 +52,7 @@ resource "google_compute_region_instance_group_manager" "iap_proxy" {
   }
 
   auto_healing_policies {
-    health_check      = google_compute_health_check.iap_proxy_tcp.id
+    health_check      = google_compute_health_check.iap_proxy_https.id
     initial_delay_sec = 300
   }
 
@@ -64,15 +64,16 @@ resource "google_compute_region_instance_group_manager" "iap_proxy" {
   }
 }
 
-resource "google_compute_health_check" "iap_proxy_tcp" {
-  name                = "iap-proxy-tcp"
+resource "google_compute_health_check" "iap_proxy_https" {
+  name                = "iap-proxy-https"
   check_interval_sec  = 10
   timeout_sec         = 5
   healthy_threshold   = 2
   unhealthy_threshold = 10 # 100 seconds
 
-  tcp_health_check {
-    port = "8443"
+  https_health_check {
+    port         = "8443"
+    request_path = "/__health"
   }
 
   log_config {
