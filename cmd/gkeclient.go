@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/binxio/simple-iap-proxy/flags"
@@ -17,7 +16,6 @@ func newGKEClientCmd() *cobra.Command {
 				Short: "starts a client side proxy, forwarding requests to the GKE cluster via the IAP",
 				Long: `The client will start a real HTTP/S proxy and forward any requests for,
 ip address of GKE cluster master endpoints, to the IAP proxy.`,
-				RunE: runProxy,
 			},
 		},
 	}
@@ -33,13 +31,10 @@ ip address of GKE cluster master endpoints, to the IAP proxy.`,
 	c.MarkFlagRequired("service-account")
 	c.MarkFlagRequired("target-url")
 	c.Flags().SortFlags = false
-	return &c.Command
-}
 
-func runProxy(c *cobra.Command, _ []string) error {
-	p, ok := interface{}(c).(gkeclient.Proxy)
-	if !ok {
-		return fmt.Errorf("command is not a proxy command")
+	c.RunE = func(cmd *cobra.Command, args []string) error {
+		return c.Run()
 	}
-	return p.Run()
+
+	return &c.Command
 }
