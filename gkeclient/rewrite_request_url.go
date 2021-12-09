@@ -1,4 +1,4 @@
-package gke_client
+package gkeclient
 
 import (
 	"net/http"

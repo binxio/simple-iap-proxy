@@ -1,12 +1,12 @@
-package gke_server
+package gkeserver
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
 	"github.com/binxio/simple-iap-proxy/clusterinfo"
+	"github.com/binxio/simple-iap-proxy/flags"
 	"golang.org/x/oauth2/google"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -15,12 +15,8 @@ import (
 
 // ReverseProxy provides the runtime configuration of the Reverse Proxy
 type ReverseProxy struct {
-	Debug           bool
-	Port            int
-	ProjectID       string
-	KeyFile         string
-	CertificateFile string
-	clusterInfo     *clusterinfo.Cache
+	flags.RootCommand
+	clusterInfo *clusterinfo.Cache
 }
 
 func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
@@ -78,14 +74,14 @@ func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Run the reverse proxy until stopped
-func (p *ReverseProxy) Run() {
+func (p *ReverseProxy) Run() error {
 	var err error
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if err = p.retrieveClusterInfo(ctx); err != nil {
-		log.Fatalf("failed to retrieve cluster information, %s", err)
+		return fmt.Errorf("failed to retrieve cluster information, %s", err)
 	}
 
 	http.Handle("/", p)
@@ -97,7 +93,5 @@ func (p *ReverseProxy) Run() {
 	}
 
 	err = srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
-	if err != nil {
-		log.Fatalf("failed to start server, %s", err)
-	}
+	return err
 }

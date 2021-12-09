@@ -1,4 +1,4 @@
-package gke_client
+package gkeclient
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/binxio/gcloudconfig"
 	"github.com/binxio/simple-iap-proxy/clusterinfo"
+	"github.com/binxio/simple-iap-proxy/flags"
 	"github.com/elazarl/goproxy"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -17,24 +18,84 @@ import (
 	"time"
 )
 
-// Proxy provides the runtime configuration of the GKE Proxy
+// Proxy for GKE private master endpoints
 type Proxy struct {
-	Debug                 bool
-	Port                  int
-	ProjectID             string
-	KeyFile               string
-	CertificateFile       string
-	Certificate           *tls.Certificate
+	flags.RootCommand
 	Audience              string
 	ServiceAccount        string
 	ConfigurationName     string
 	UseDefaultCredentials bool
+	TargetURL             string
+	ProjectID             string
+	targetURL             *url.URL
+	credentials           *google.Credentials
+	tokenSource           oauth2.TokenSource
+	clusterInfo           *clusterinfo.Cache
+	certificate           *tls.Certificate
+}
 
-	TargetURL   string
-	targetURL   *url.URL
-	credentials *google.Credentials
-	tokenSource oauth2.TokenSource
-	clusterInfo *clusterinfo.Cache
+// Run the proxy until stopped
+func (p *Proxy) Run() error {
+	var err error
+
+	// mis-using the positional argument validator here.
+	if p.UseDefaultCredentials && p.ConfigurationName != "" {
+		return fmt.Errorf("specify either --use-default-credentials or --configuration, not both")
+	}
+
+	p.certificate, err = loadCertificate(p.KeyFile, p.CertificateFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p.targetURL, err = url.Parse(p.TargetURL)
+	if err != nil {
+		return fmt.Errorf("invalid target-url %s, %s", p.TargetURL, err)
+	}
+
+	if p.targetURL.Scheme != "https" {
+		return fmt.Errorf("target-url must be https")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = p.getCredentials(ctx)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+
+	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+
+	tokenConfig := impersonate.IDTokenConfig{
+		TargetPrincipal: p.ServiceAccount,
+		Audience:        p.Audience,
+		IncludeEmail:    true,
+	}
+
+	p.tokenSource, err = impersonate.IDTokenSource(
+		ctx,
+		tokenConfig,
+		option.WithTokenSource(p.credentials.TokenSource),
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to create a token source for audience %s as %s, %s",
+			p.Audience, p.ServiceAccount, err)
+	}
+
+	proxy := p.createProxy()
+
+	srv := &http.Server{
+		Handler:      proxy,
+		Addr:         fmt.Sprintf(":%d", p.Port),
+		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+	}
+
+	return srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
 }
 
 func (p *Proxy) getCredentials(ctx context.Context) error {
@@ -96,8 +157,8 @@ func (p *Proxy) createProxy() *goproxy.ProxyHttpServer {
 	proxy.OnRequest(p.IsClusterEndpoint()).HandleConnect(goproxy.AlwaysMitm)
 	proxy.OnRequest(p.IsClusterEndpoint()).DoFunc(p.OnRequest)
 
-	goproxy.GoproxyCa = *p.Certificate
-	tlsConfig := goproxy.TLSConfigFromCA(p.Certificate)
+	goproxy.GoproxyCa = *p.certificate
+	tlsConfig := goproxy.TLSConfigFromCA(p.certificate)
 
 	goproxy.OkConnect = &goproxy.ConnectAction{
 		Action:    goproxy.ConnectAccept,
@@ -117,50 +178,4 @@ func (p *Proxy) createProxy() *goproxy.ProxyHttpServer {
 	}
 
 	return proxy
-}
-
-// Run the proxy until stopped
-func (p *Proxy) Run() {
-	var err error
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if p.targetURL, err = url.Parse(p.TargetURL); err != nil {
-		log.Fatalf("target url is not valid, %s", err)
-	}
-
-	err = p.getCredentials(ctx)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-
-	p.tokenSource, err = impersonate.IDTokenSource(ctx, impersonate.IDTokenConfig{
-		TargetPrincipal: p.ServiceAccount,
-		Audience:        p.Audience,
-		IncludeEmail:    true,
-	},
-		option.WithTokenSource(p.credentials.TokenSource))
-	if err != nil {
-		log.Fatalf("failed to create a token source for audience %s as %s, %s",
-			p.Audience, p.ServiceAccount, err)
-	}
-
-	proxy := p.createProxy()
-
-	srv := &http.Server{
-		Handler:      proxy,
-		Addr:         fmt.Sprintf(":%d", p.Port),
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
-	}
-
-	err = srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
