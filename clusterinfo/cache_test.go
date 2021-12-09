@@ -2,10 +2,11 @@ package clusterinfo
 
 import (
 	"context"
-	"github.com/binxio/gcloudconfig"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/binxio/gcloudconfig"
 )
 
 func TestListClusters(t *testing.T) {

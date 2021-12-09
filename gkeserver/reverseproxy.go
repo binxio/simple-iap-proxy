@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/binxio/simple-iap-proxy/clusterinfo"
-	"github.com/binxio/simple-iap-proxy/flags"
-	"golang.org/x/oauth2/google"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
+
+	"github.com/binxio/simple-iap-proxy/clusterinfo"
+	"github.com/binxio/simple-iap-proxy/flags"
+	"golang.org/x/oauth2/google"
 )
 
 // ReverseProxy provides the runtime configuration of the Reverse Proxy
@@ -35,13 +36,13 @@ func (p *ReverseProxy) retrieveClusterInfo(ctx context.Context) error {
 	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, credentials, 5*time.Minute)
 	return err
 }
+
 func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "service is healthy\n")
 }
 
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	clusterInfo := p.clusterInfo.GetConnectInfoForEndpoint(r.Host)
 	if clusterInfo == nil {
 		w.WriteHeader(http.StatusBadGateway)

@@ -8,7 +8,6 @@ import (
 )
 
 func loadCertificate(keyFile, certificateFile string) (*tls.Certificate, error) {
-
 	caKey, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, fmt.Errorf("%s, %s", keyFile, err)

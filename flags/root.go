@@ -1,10 +1,11 @@
 package flags
 
 import (
-	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/spf13/cobra"
 )
 
 // RootCommand the root command with all the global flags

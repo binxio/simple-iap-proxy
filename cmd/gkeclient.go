@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/binxio/simple-iap-proxy/flags"
 	"github.com/binxio/simple-iap-proxy/gkeclient"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 func newGKEClientCmd() *cobra.Command {

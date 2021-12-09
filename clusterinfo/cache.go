@@ -5,13 +5,14 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/container/v1"
-	"google.golang.org/api/option"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/container/v1"
+	"google.golang.org/api/option"
 )
 
 // ConnectInfo provides basie GKE cluster connect information

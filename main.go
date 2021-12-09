@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/binxio/simple-iap-proxy/cmd"
 	"os"
+
+	"github.com/binxio/simple-iap-proxy/cmd"
 )
 
 func main() {
@@ -11,5 +12,4 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
 }

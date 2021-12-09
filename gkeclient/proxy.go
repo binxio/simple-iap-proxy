@@ -4,6 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/binxio/gcloudconfig"
 	"github.com/binxio/simple-iap-proxy/clusterinfo"
 	"github.com/binxio/simple-iap-proxy/flags"
@@ -12,10 +17,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/impersonate"
 	"google.golang.org/api/option"
-	"log"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 // Proxy for GKE private master endpoints
