@@ -15,32 +15,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type GenerateCertificate struct {
+	RootCommand
+	DNSName string
+}
+
 func NewGenerateCertificateCmd() *cobra.Command {
-	c := RootCommand{
-		Command: cobra.Command{
-			Use:   "generate-certificate",
-			Short: "generates a self-signed localhost certificate",
-			Long: `
+	c := GenerateCertificate{
+			RootCommand: RootCommand{
+				Command: cobra.Command{
+					Use:   "generate-certificate",
+					Short: "generates a self-signed localhost certificate",
+					Long: `
 generates an key and self-signed certificate which can be used to
 serve over HTTPS.
 `,
-		},
+				},
+			},
 	}
 
 	c.AddPersistentFlags()
+	c.Flags().StringVarP(&c.DNSName, "dns-name", "", "localhost", "on the certificate")
+
 	c.RunE = func(cmd *cobra.Command, args []string) error {
-		return generateCertificate(c.KeyFile, c.CertificateFile)
+		return generateCertificate(c.KeyFile, c.CertificateFile, c.DNSName)
 	}
 
 	return &c.Command
 }
 
-func generateCertificate(keyFile, certificateFile string) error {
+func generateCertificate(keyFile, certificateFile, dnsName string) error {
 	template := x509.Certificate{}
 	template.Subject = pkix.Name{
 		Organization: []string{"binx.io B.V."},
 		Country:      []string{"NL"},
-		CommonName:   "localhost",
+		CommonName:   dnsName,
 	}
 
 	template.NotBefore = time.Now()
@@ -55,7 +64,7 @@ func generateCertificate(keyFile, certificateFile string) error {
 	}
 	template.IsCA = true
 	template.BasicConstraintsValid = true
-	template.DNSNames = []string{"localhost"}
+	template.DNSNames = []string{dnsName}
 
 	key, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
