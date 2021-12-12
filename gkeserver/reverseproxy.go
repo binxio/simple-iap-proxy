@@ -9,14 +9,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/binxio/simple-iap-proxy/cmd"
+
 	"github.com/binxio/simple-iap-proxy/clusterinfo"
-	"github.com/binxio/simple-iap-proxy/flags"
 	"golang.org/x/oauth2/google"
 )
 
 // ReverseProxy provides the runtime configuration of the Reverse Proxy
 type ReverseProxy struct {
-	flags.RootCommand
+	cmd.RootCommand
 	clusterInfo *clusterinfo.Cache
 }
 

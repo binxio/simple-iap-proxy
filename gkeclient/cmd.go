@@ -1,16 +1,15 @@
-package cmd
+package gkeclient
 
 import (
 	"log"
 
-	"github.com/binxio/simple-iap-proxy/flags"
-	"github.com/binxio/simple-iap-proxy/gkeclient"
+	"github.com/binxio/simple-iap-proxy/cmd"
 	"github.com/spf13/cobra"
 )
 
-func newGKEClientCmd() *cobra.Command {
-	c := gkeclient.Proxy{
-		RootCommand: flags.RootCommand{
+func NewGKEClientCmd() *cobra.Command {
+	c := Proxy{
+		RootCommand: cmd.RootCommand{
 			Command: cobra.Command{
 				Use:   "gke-client",
 				Short: "starts a client side proxy, forwarding requests to the GKE cluster via the IAP",

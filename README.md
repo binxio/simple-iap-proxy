@@ -63,6 +63,13 @@ EOT
 To start the IAP proxy, you need a certificate. To generate a self-signed certificate, type:
 
 ```bash
+simple-iap-proxy generate-certificate \
+  --key-file server.key \
+  --certificate-file server.crt
+ ```
+
+Or alternatively, use openssl:
+```bash
 openssl genrsa -out server.key 2048
 openssl req -new -x509 -sha256 \
     -key server.key \
@@ -71,22 +78,7 @@ openssl req -new -x509 -sha256 \
     -days 3650 \
     -out server.crt
 ```
-
-To trust the proxy, you add the certificate to the trust store. On MacOs, type:
-
-```bash
-sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ./server.crt
-```
-
-On Linux, type:
-
-```sh
-cp server.crt /etc/ssl/certs/
-c_rehash
-```
-
- 
-Now you can start the proxy, by copying the outputted command:
+Now you can start the proxy, by copying the command printed by terraform:
 
 ```sh
 $ go install github.com/binxio/simple-iap-proxy@0.2.0
@@ -121,6 +113,19 @@ Now you can use kubectl over IAP!
 
 ```sh
 $ kubectl cluster-info dump
+```
+
+## using the proxy with other clients
+If you want to trust the proxy from other clients than kubectl, add the certificate to the trust store. On MacOS, type:
+
+```bash
+sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ./server.crt
+```
+
+On Linux, type:
+```bash
+cp server.crt /etc/ssl/certs/
+c_rehash
 ```
 
 ## Caveats

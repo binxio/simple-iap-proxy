@@ -1,7 +1,7 @@
 \.terraform/
 terraform.tfstate*
-/server.key
-/server.crt
+/*.key
+/*.crt
 /.idea/
 simple-iap-proxy
 .auto.tfvars

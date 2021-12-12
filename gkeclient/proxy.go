@@ -11,7 +11,7 @@ import (
 
 	"github.com/binxio/gcloudconfig"
 	"github.com/binxio/simple-iap-proxy/clusterinfo"
-	"github.com/binxio/simple-iap-proxy/flags"
+	"github.com/binxio/simple-iap-proxy/cmd"
 	"github.com/elazarl/goproxy"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -21,7 +21,7 @@ import (
 
 // Proxy for GKE private master endpoints
 type Proxy struct {
-	flags.RootCommand
+	cmd.RootCommand
 	Audience              string
 	ServiceAccount        string
 	ConfigurationName     string

@@ -1,14 +1,13 @@
-package cmd
+package gkeserver
 
 import (
-	"github.com/binxio/simple-iap-proxy/flags"
-	"github.com/binxio/simple-iap-proxy/gkeserver"
+	"github.com/binxio/simple-iap-proxy/cmd"
 	"github.com/spf13/cobra"
 )
 
-func newGKEServerCmd() *cobra.Command {
-	c := gkeserver.ReverseProxy{
-		RootCommand: flags.RootCommand{
+func NewGKEServerCmd() *cobra.Command {
+	c := ReverseProxy{
+		RootCommand: cmd.RootCommand{
 			Command: cobra.Command{
 				Use:   "gke-server",
 				Short: "forwards requests from the load balancer to the appropriate GKE cluster",
