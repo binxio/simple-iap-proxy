@@ -84,8 +84,14 @@ func (p *Proxy) Run() error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to create a token source for audience %s as %s, %s",
-			p.Audience, p.ServiceAccount, err)
+		return fmt.Errorf("failed to create a token source for %s with audience %s, %s",
+			p.ServiceAccount, p.Audience, err)
+	}
+
+	_, err = p.tokenSource.Token()
+	if err != nil {
+		return fmt.Errorf("failed to obtain token for %s, %s",
+			p.ServiceAccount, err)
 	}
 
 	proxy := p.createProxy()
@@ -134,7 +140,7 @@ func (p *Proxy) OnRequest(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request
 	if err != nil {
 		return r, goproxy.NewResponse(r,
 			goproxy.ContentTypeText, http.StatusInternalServerError,
-			fmt.Sprintf("Failed to obtained IAP token, %s", err))
+			fmt.Sprintf("failed to obtain IAP token, %s", err))
 	}
 
 	// If there is a Authorization header, make it X-Real-Authorization header

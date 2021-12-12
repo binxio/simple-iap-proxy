@@ -22,16 +22,16 @@ type GenerateCertificate struct {
 
 func NewGenerateCertificateCmd() *cobra.Command {
 	c := GenerateCertificate{
-			RootCommand: RootCommand{
-				Command: cobra.Command{
-					Use:   "generate-certificate",
-					Short: "generates a self-signed localhost certificate",
-					Long: `
+		RootCommand: RootCommand{
+			Command: cobra.Command{
+				Use:   "generate-certificate",
+				Short: "generates a self-signed localhost certificate",
+				Long: `
 generates an key and self-signed certificate which can be used to
 serve over HTTPS.
 `,
-				},
 			},
+		},
 	}
 
 	c.AddPersistentFlags()
