@@ -98,9 +98,6 @@ $ gcloud container clusters \
 To configure the kubectl access via the IAP proxy, type:
 
 ```sh
-gcloud container clusters \
-   get-credentials cluster-1
-   
 context_name=$(kubectl config current-context)
 kubectl config set clusters.$context_name.certificate-authority-data $(base64 < server.crt)
 kubectl config set clusters.$context_name.proxy-url https://localhost:8080
