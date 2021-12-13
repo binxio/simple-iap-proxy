@@ -83,7 +83,7 @@ openssl req -new -x509 -sha256 \
 Now you can start the proxy, by copying the command printed by terraform:
 
 ```sh
-$ go install github.com/binxio/simple-iap-proxy@0.2.0
+$ go install github.com/binxio/simple-iap-proxy@0.4.1
 $ terraform output -raw iap_proxy_command | sh
 ```
 The reason for the self-signed certificate is that kubectl will not send the credentials over HTTP.
