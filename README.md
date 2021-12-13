@@ -7,6 +7,8 @@ to deploy objects in the k8s cluster, not be able to.
 This simple IAP proxy allows you to access a private GKE master control plane
 via the Identity Aware Proxy.
 
+![iap proxy to gke private endpoint](https://binx.io/wp-content/uploads/2021/12/simple-iap-proxy-2-1800x937.png)
+
 ## prerequisites
 To deploy the IAP proxy you need the following:
 
@@ -130,3 +132,5 @@ c_rehash
   on websockets will fail (ie kubectl exec).
 - the --debug flag is not very verbose.
 - The proxy has not been tested yet in the field, so I am happy to hear your feedback!
+
+[Read the blog](https://binx.io/blog/2021/12/11/how-to-connect-to-a-gke-private-endpoint-using-iap/)
