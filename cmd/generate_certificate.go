@@ -15,11 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GeneratedCertificate command
 type GenerateCertificate struct {
 	RootCommand
 	DNSName string
 }
 
+// NewGenerateCertificateCmd creates a generate certificate commmand
 func NewGenerateCertificateCmd() *cobra.Command {
 	c := GenerateCertificate{
 		RootCommand: RootCommand{

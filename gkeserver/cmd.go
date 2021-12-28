@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGKEServerCmd create a gke server command
 func NewGKEServerCmd() *cobra.Command {
 	c := ReverseProxy{
 		RootCommand: cmd.RootCommand{

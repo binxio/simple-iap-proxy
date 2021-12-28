@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGKEClientCmd create a gke client command
 func NewGKEClientCmd() *cobra.Command {
 	c := Proxy{
 		RootCommand: cmd.RootCommand{

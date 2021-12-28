@@ -64,14 +64,6 @@ func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// If there is a X-Real-Authorization header, make it Authorization header
-	if realAuthHeaders := r.Header.Values("X-Real-Authorization"); len(realAuthHeaders) > 0 {
-		r.Header.Del("Authorization")
-		for _, v := range r.Header.Values("X-Real-Authorization") {
-			r.Header.Add("Authorization", v)
-		}
-	}
-
 	proxy.ServeHTTP(w, r)
 }
 
