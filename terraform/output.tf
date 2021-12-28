@@ -36,6 +36,21 @@ locals {
   }
 }
 
+output "curl_command" {
+  value = <<EOF
+ID_TOKEN=$(
+   gcloud auth print-identity-token \
+   --audiences  ${local.exports.audience} \
+   --include-email \
+   --impersonate-service-account ${local.exports.service-account}
+)
+echo -n "Cluster endpoint: " && read CLUSTER_ENDPOINT
+curl --header "Host: $CLUSTER_ENDPOINT" \
+     --header "Authorization: Bearer $(gcloud auth print-access-token)" \
+     --header "Proxy-Authorization: Bearer $ID_TOKEN"  ${local.exports.target-url}
+EOF
+}
+
 output "iap_proxy_command" {
   value = <<EOF
 simple-iap-proxy gke-client \
