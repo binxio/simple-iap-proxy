@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/binxio/simple-iap-proxy/cmd"
-	"github.com/binxio/simple-iap-proxy/gkeclient"
+	"github.com/binxio/simple-iap-proxy/client"
 	"github.com/binxio/simple-iap-proxy/gkeserver"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +24,7 @@ is run inside the VPC.
 	}
 	c.AddPersistentFlags()
 	c.AddCommand(cmd.NewGenerateCertificateCmd())
-	c.AddCommand(gkeclient.NewGKEClientCmd())
+	c.AddCommand(client.NewClientCmd())
 	c.AddCommand(gkeserver.NewGKEServerCmd())
 	return &c
 }

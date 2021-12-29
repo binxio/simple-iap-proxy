@@ -53,12 +53,13 @@ EOF
 
 output "iap_proxy_command" {
   value = <<EOF
-simple-iap-proxy gke-client \
+simple-iap-proxy client \
   --target-url ${local.exports.target-url} \
   --iap-audience ${local.exports.audience} \
   --service-account ${local.exports.service-account} \
   --key-file server.key \
-  --certificate-file server.crt
+  --certificate-file server.crt \
+  --to-gke
 EOF
 }
 

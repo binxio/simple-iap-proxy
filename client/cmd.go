@@ -1,4 +1,4 @@
-package gkeclient
+package client
 
 import (
 	"log"
@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewGKEClientCmd create a gke client command
-func NewGKEClientCmd() *cobra.Command {
+// NewClientCmd create a gke client command
+func NewClientCmd() *cobra.Command {
 	c := Proxy{
 		RootCommand: cmd.RootCommand{
 			Command: cobra.Command{

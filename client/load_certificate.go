@@ -1,4 +1,4 @@
-package gkeclient
+package client
 
 import (
 	"crypto/tls"

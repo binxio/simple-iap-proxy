@@ -203,8 +203,8 @@ locals {
   cloud_config = {
     runcmd = [
       "c_rehash > /dev/null",
-      "iptables -I INPUT -p tcp -j ACCEPT",
-      "i6ptables -I INPUT -p tcp -j ACCEPT",
+      "iptables -I INPUT -p tcp -j ACCEPT --dport 8443",
+      "i6ptables -I INPUT -p tcp -j ACCEPT --dport 8443",
       "systemctl daemon-reload",
       "systemctl enable --now iap-proxy.service"
     ]

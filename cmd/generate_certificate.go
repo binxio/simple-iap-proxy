@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// GeneratedCertificate command
+// GenerateCertificate represents the command to generate a certificate
 type GenerateCertificate struct {
 	RootCommand
 	DNSName string
