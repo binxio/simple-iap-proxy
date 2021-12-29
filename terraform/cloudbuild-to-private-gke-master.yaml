@@ -20,7 +20,7 @@
 #
 
 substitutions:
-  _SIMPLE_IAP_PROXY: 'gcr.io/binx-io-public/simple-iap-proxy:0.4.1'
+  _SIMPLE_IAP_PROXY: 'gcr.io/binx-io-public/simple-iap-proxy:0.5.1'
   _CLUSTER_NAME: cluster7             # change to the name of your cluster
   _CLUSTER_ZONE: europe-west4-c       # change to the zone of your cluster
 
@@ -58,7 +58,8 @@ steps:
       - >
         docker run -d --rm -v /workspace:/workspace -w /workspace
         --network cloudbuild --name simple-iap-proxy
-        ${_SIMPLE_IAP_PROXY} gke-client
+        ${_SIMPLE_IAP_PROXY} client
+        --to-gke
         --port 8080
         --target-url $$TARGET_URL
         --iap-audience $$AUDIENCE
