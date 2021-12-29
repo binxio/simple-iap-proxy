@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/binxio/gcloudconfig"
@@ -28,20 +29,26 @@ type Proxy struct {
 	UseDefaultCredentials bool
 	TargetURL             string
 	ProjectID             string
+	ToGKEClusters         bool
+	HostNames             []string
 	targetURL             *url.URL
 	credentials           *google.Credentials
 	tokenSource           oauth2.TokenSource
-	clusterInfo           *clusterinfo.Cache
 	certificate           *tls.Certificate
+	clusterInfo           *clusterinfo.Cache
+	hostNames             []*regexp.Regexp
 }
 
 // Run the proxy until stopped
 func (p *Proxy) Run() error {
 	var err error
 
-	// mis-using the positional argument validator here.
 	if p.UseDefaultCredentials && p.ConfigurationName != "" {
 		return fmt.Errorf("specify either --use-default-credentials or --configuration, not both")
+	}
+
+	if !p.ToGKEClusters && len(p.HostNames) == 0 {
+		return fmt.Errorf("at least --proxy-to or --proxy-to-gke must be specified")
 	}
 
 	p.certificate, err = loadCertificate(p.KeyFile, p.CertificateFile)
@@ -66,9 +73,20 @@ func (p *Proxy) Run() error {
 		return fmt.Errorf("%s", err)
 	}
 
-	p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	if p.ToGKEClusters {
+		p.clusterInfo, err = clusterinfo.NewCache(ctx, p.ProjectID, p.credentials, 5*time.Minute)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+	}
+
+	p.hostNames = make([]*regexp.Regexp, 0, len(p.HostNames))
+	for _, r := range p.HostNames {
+		e, err := regexp.Compile(r)
+		if err != nil {
+			return fmt.Errorf("invalid proxy-to value, %s", err)
+		}
+		p.hostNames = append(p.hostNames, e)
 	}
 
 	tokenConfig := impersonate.IDTokenConfig{
@@ -125,10 +143,10 @@ func (p *Proxy) getCredentials(ctx context.Context) error {
 	return nil
 }
 
-// IsClusterEndpoint return true if the request is targeting an GKE cluster endpoint
-func (p *Proxy) IsClusterEndpoint() goproxy.ReqConditionFunc {
+// IsAllowedProxyEndpoint return true if the request is targets an allowed proxy endpoint
+func (p *Proxy) IsAllowedProxyEndpoint() goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
-		return p.clusterInfo.GetConnectInfoForEndpoint(req.URL.Host) != nil
+		return p.clusterInfo != nil && p.clusterInfo.GetConnectInfoForEndpoint(req.URL.Host) != nil || goproxy.ReqHostMatches(p.hostNames...).HandleReq(req, ctx)
 	}
 }
 
@@ -186,8 +204,8 @@ func (p *Proxy) createProxy() *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = p.Debug
 	proxy.KeepHeader = true
-	proxy.OnRequest(p.IsClusterEndpoint()).HandleConnect(goproxy.AlwaysMitm)
-	proxy.OnRequest(p.IsClusterEndpoint()).DoFunc(p.OnRequest)
+	proxy.OnRequest(p.IsAllowedProxyEndpoint()).HandleConnect(goproxy.AlwaysMitm)
+	proxy.OnRequest(p.IsAllowedProxyEndpoint()).DoFunc(p.OnRequest)
 
 	goproxy.GoproxyCa = *p.certificate
 	tlsConfig := goproxy.TLSConfigFromCA(p.certificate)

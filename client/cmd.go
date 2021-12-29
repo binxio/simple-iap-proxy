@@ -12,10 +12,10 @@ func NewGKEClientCmd() *cobra.Command {
 	c := Proxy{
 		RootCommand: cmd.RootCommand{
 			Command: cobra.Command{
-				Use:   "gke-client",
-				Short: "starts a client side proxy, forwarding requests to the GKE cluster via the IAP",
-				Long: `The client will start a real HTTP/S proxy and forward any requests for,
-ip address of GKE cluster master endpoints, to the IAP proxy.`,
+				Use:   "client",
+				Short: "starts a client side proxy, forwarding requests via an IAP endpoint",
+				Long: `The client will start a real HTTP/S proxy and forward any requests for
+ip addresses of GKE cluster master endpoints or specified hostnames, to the IAP proxy.`,
 			},
 		},
 	}
@@ -25,6 +25,8 @@ ip address of GKE cluster master endpoints, to the IAP proxy.`,
 	c.Flags().StringVarP(&c.ServiceAccount, "service-account", "s", "", "to impersonate")
 	c.Flags().BoolVarP(&c.UseDefaultCredentials, "use-default-credentials", "u", false, "use default credentials instead of gcloud configuration")
 	c.Flags().StringVarP(&c.ConfigurationName, "configuration", "C", "", "name of gcloud configuration to use for credentials")
+	c.Flags().BoolVarP(&c.ToGKEClusters, "to-gke", "G", false, "proxy to GKE clusters in the project")
+	c.Flags().StringSliceVarP(&c.HostNames, "to-host", "H", []string{}, "proxy to these hosts, specified as regular expression")
 	if err := c.MarkFlagRequired("iap-audience"); err != nil {
 		log.Fatal(err)
 	}
