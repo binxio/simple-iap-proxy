@@ -33,9 +33,6 @@ availableSecrets:
     - env: TARGET_URL
       versionName: projects/${PROJECT_ID}/secrets/simple-iap-proxy-target-url/versions/latest
 
-#options:
-#  env: KUBECONFIG=/workspace/kube.cfg
-
 steps:
   - id: generate certificate
     name: ${_SIMPLE_IAP_PROXY}
