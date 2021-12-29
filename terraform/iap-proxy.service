@@ -1,5 +1,6 @@
 [Unit]
-Description=IAP proxy
+Description=IAP reverse proxy to GKE clusters
+
 Requires=docker.service network-online.target
 After=docker.service network-online.target
 
