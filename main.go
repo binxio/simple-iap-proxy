@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/binxio/simple-iap-proxy/cmd"
 	"github.com/binxio/simple-iap-proxy/client"
+	"github.com/binxio/simple-iap-proxy/cmd"
 	"github.com/binxio/simple-iap-proxy/gkeserver"
 	"github.com/spf13/cobra"
 )
@@ -13,12 +13,10 @@ func newRootCmd() *cmd.RootCommand {
 	c := cmd.RootCommand{
 		Command: cobra.Command{
 			Use:   "simple-iap-proxy",
-			Short: "A simple proxy to forward requests over IAP to GKE",
+			Short: "A simple proxy to forward requests over the Google Identity Aware Proxy",
 			Long: `
-This application allows you to gain access to GKE clusters
-with a private master IP address via an IAP proxy. It consists of
-a proxy which can be run on the client side, and a reverse-proxy which
-is run inside the VPC.
+This is a simple IAP proxy. It will intercept the required HTTPS request and 
+inject the IAP proxy authorization header.
 `,
 		},
 	}

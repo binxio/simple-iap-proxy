@@ -1,136 +1,89 @@
-simple IAP proxy for accessing a private GKE master control plane
-=================================================================
-GKE CIS security control 6.6.4 requires clusters to be created with private endpoint enabled
-and public access disabled. When public access is disabled, CI/CD pipelines which need
-to deploy objects in the k8s cluster, not be able to.
+simple Google IAP proxy
+=======================
+This is a simple IAP HTTP/S proxy. It will intercept the required HTTPS request and
+inject the IAP proxy authorization header.
 
-This simple IAP proxy allows you to access a private GKE master control plane
-via the Identity Aware Proxy.
+![simple-iap-proxy](./simple-iap-proxy.png)
 
-![iap proxy to gke private endpoint](https://binx.io/wp-content/uploads/2021/12/simple-iap-proxy-2-1800x937.png)
+```
+Usage:
+simple-iap-proxy [command]
 
-## prerequisites
-To deploy the IAP proxy you need the following:
+Available Commands:
+client               starts a client side proxy, forwarding requests via an IAP endpoint
+gke-server           forwards requests to GKE clusters
+generate-certificate generates a self-signed localhost certificate
 
-- a google project id with a default network
-- a GKE cluster with a private endpoint
-- a Google DNS managed zone, which is publicly accessible
-- a user you want to grant access
-
-To configure your deployment, create a file `.auto.tfvars` with the following content:
-
-```hcl
-# project and region to deploy to IAP proxy into
-project = "my-project"
-region = "europe-west4"
-
-## DNS managed zone accessible from the public internet
-dns_managed_zone = "my-managed-zone"
-
-## users you want to grant access via the IAP proxy
-accessors = [
-    "user:markvanholsteijn@binx.io",
-]
-
-# support email address for the IAP brand.
-# if there is an IAP brand in your project, make this empty string: ""
-# To check whether you already have a brand, type `gcloud alpha iap oauth-brands list`
-iap_support_email = "markvanholsteijn@binx.io"
+Flags:
+-k, --key-file string           key file for serving https
+-c, --certificate-file string   certificate of the server
+-d, --debug                     provide debug information
+-P, --port int                  port to listen on (default 8080)
+-p, --project string            google project id to use
 ```
 
-## deploying the IAP proxy
-To deploy the IAP proxy for GKE, type:
 
-```sh
-git clone https://github.com/binxio/simple-iap-proxy.git
-cp .auto.tfvars simple-iap-proxy/terraform
-terraform init
-terraform apply
+## simple-iap-proxy client
+
+The client will start a real HTTP/S proxy and forward any requests for
+ip addresses of GKE cluster master endpoints or specified hostnames to the IAP proxy.
+Adds the required ID token as the Proxy-Authorization header in the request. Generates self-signed
+certificates for the targeted hosts on the fly.
+
+```
+Usage:
+simple-iap-proxy client [flags]
+
+Flags:
+-t, --target-url string         to forward requests to
+-a, --iap-audience string       of the IAP application
+-s, --service-account string    to impersonate
+-u, --use-default-credentials   use default credentials instead of gcloud configuration
+-C, --configuration string      name of gcloud configuration to use for credentials
+-G, --to-gke                    proxy to GKE clusters in the project
+-H, --to-host strings           proxy to these hosts, specified as regular expression
+    --http-protocol             listen on HTTP instead of HTTPS
 ```
 
-After the apply, the required IAP proxy command is printed:
-```
-iap_proxy_command = <<EOT
-simple-iap-proxy gke-client \
-  --target-url https://iap-proxy.google.binx.dev \
-  --iap-audience 712731707077-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
-  --service-account iap-proxy-accessor@speeltuin-mvanholsteijn.iam.gserviceaccount.com \
-  --key-file server.key \
-  --certificate-file server.crt
+## simple-iap-proxy gke-server
 
-EOT
+Reads the Host header of the http requests and if it matches the ip address of a GKE cluster master endpoint,
+forwards the request to it. Reject requests for any other endpoint. 
+```
+Usage:
+simple-iap-proxy gke-server
 ```
 
-## start the IAP proxy
-To start the IAP proxy, you need a certificate. To generate a self-signed certificate, type:
 
-```bash
-simple-iap-proxy generate-certificate \
-  --key-file server.key \
-  --certificate-file server.crt
- ```
+## simple-iap-proxy generate-certificate
 
-Or alternatively, use openssl:
-```bash
-openssl genrsa -out server.key 2048
-openssl req -new -x509 -sha256 \
-    -key server.key \
-    -subj "/CN=localhost" \
-    -addext "subjectAltName = DNS:localhost" \
-    -days 3650 \
-    -out server.crt
+generates a private key and self-signed certificate which can be used to
+serve over HTTPS.
+
 ```
-Now you can start the proxy, by copying the command printed by terraform:
+Usage:
+simple-iap-proxy generate-certificate [flags]
 
-```sh
-$ go install github.com/binxio/simple-iap-proxy@0.4.1
-$ terraform output -raw iap_proxy_command | sh
-```
-The reason for the self-signed certificate is that kubectl will not send the credentials over HTTP.
-
-## get credentials for your cluster
-To get the credentials for your cluster, type:
-
-```sh
-$ gcloud container clusters \
-   get-credentials cluster-1
-````
-
-## configure kubectl access via IAP proxy
-To configure the kubectl access via the IAP proxy, type:
-
-```sh
-context_name=$(kubectl config current-context)
-kubectl config set clusters.$context_name.certificate-authority-data $(base64 < server.crt)
-kubectl config set clusters.$context_name.proxy-url https://localhost:8080
+Flags:
+--dns-name string   on the certificate (default "localhost")
 ```
 
-This points the context to the proxy and configure the self-signed certificate for the server.
+## examples
+There are two examples you can try out:
 
-## use kubectl over IAP
-Now you can use kubectl over IAP!
+- [IAP proxy to a GKE clusters](examples/to-gke-clusters/README.md)
+- [IAP Proxy to a normal service](examples/to-service/README.md)
 
-```sh
-$ kubectl cluster-info dump
-```
+## installing the IAP proxy
+Install the simple-iap-proxy by downloading the latest release 
+from [github.com/binxio/simple-iap-proxy](https://github.com/binxio/simple-iap-proxy/releases).
 
-## using the proxy with other clients
-If you want to trust the proxy from other clients than kubectl, add the certificate to the trust store. On MacOS, type:
-
-```bash
-sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ./server.crt
-```
-
-On Linux, type:
-```bash
-cp server.crt /etc/ssl/certs/
-c_rehash
-```
+## Limitations
+- The client proxy only supports a single IAP proxy endpoint url as a target.
 
 ## Caveats
 - The IAP protocol does not support websockets as Authorization header cannot be passed in. Commands which rely
   on websockets will fail (ie kubectl exec).
-- the --debug flag is not very verbose.
-- The proxy has not been tested yet in the field, so I am happy to hear your feedback!
+- The proxy is beta software, so I am happy to hear your feedback!
 
 [Read the blog](https://binx.io/blog/2021/12/11/how-to-connect-to-a-gke-private-endpoint-using-iap/)

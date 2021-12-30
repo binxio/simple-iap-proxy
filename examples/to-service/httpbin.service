@@ -1,0 +1,20 @@
+[Unit]
+Description=httpbin
+Requires=docker.service network-online.target
+After=docker.service network-online.target
+
+
+[Service]
+Environment="IMAGE=docker.io/kennethreitz/httpbin:latest"
+
+ExecStartPre=ctr images pull ${IMAGE}
+
+ExecStart=ctr run --rm --net-host ${IMAGE} iap-proxy
+
+SuccessExitStatus=0 2
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

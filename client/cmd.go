@@ -15,7 +15,9 @@ func NewClientCmd() *cobra.Command {
 				Use:   "client",
 				Short: "starts a client side proxy, forwarding requests via an IAP endpoint",
 				Long: `The client will start a real HTTP/S proxy and forward any requests for
-ip addresses of GKE cluster master endpoints or specified hostnames, to the IAP proxy.`,
+ip addresses of GKE cluster master endpoints or specified hostnames to the IAP proxy. 
+Adds the required ID token as the Proxy-Authorization header in the request. Generates self-signed 
+certificates for the targeted hosts on the fly.`,
 			},
 		},
 	}
