@@ -31,6 +31,7 @@ type Proxy struct {
 	ProjectID             string
 	ToGKEClusters         bool
 	HostNames             []string
+	HTTPProtocol          bool
 	targetURL             *url.URL
 	credentials           *google.Credentials
 	tokenSource           oauth2.TokenSource
@@ -120,6 +121,10 @@ func (p *Proxy) Run() error {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
 
+	if p.HTTPProtocol {
+		// I could not get the proxy on MacOS configured to connect using HTTPS :-(
+		return srv.ListenAndServe()
+	}
 	return srv.ListenAndServeTLS(p.CertificateFile, p.KeyFile)
 }
 

@@ -27,6 +27,7 @@ ip addresses of GKE cluster master endpoints or specified hostnames, to the IAP 
 	c.Flags().StringVarP(&c.ConfigurationName, "configuration", "C", "", "name of gcloud configuration to use for credentials")
 	c.Flags().BoolVarP(&c.ToGKEClusters, "to-gke", "G", false, "proxy to GKE clusters in the project")
 	c.Flags().StringSliceVarP(&c.HostNames, "to-host", "H", []string{}, "proxy to these hosts, specified as regular expression")
+	c.Flags().BoolVarP(&c.HTTPProtocol, "http-protocol", "", false, "proxy listens using HTTP instead of HTTPS")
 	if err := c.MarkFlagRequired("iap-audience"); err != nil {
 		log.Fatal(err)
 	}
