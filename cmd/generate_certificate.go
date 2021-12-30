@@ -51,7 +51,7 @@ func generateCertificate(keyFile, certificateFile, dnsName string) error {
 	template.Subject = pkix.Name{
 		Organization: []string{"binx.io B.V."},
 		Country:      []string{"NL"},
-		CommonName:   dnsName,
+		CommonName:   "simple-iap-proxy",
 	}
 
 	template.NotBefore = time.Now()
