@@ -72,8 +72,11 @@ Global Flags:
 ## examples
 There are two examples you can try out:
 
-- [IAP proxy to a GKE clusters](examples/to-gke-clusters/README.md)
-- [IAP Proxy to a normal service](examples/to-service/README.md)
+- [IAP proxy to GKE clusters](./examples/to-gke-cluster/README.md)
+- [IAP Proxy to a normal service](./examples/to-service/README.md)
+
+With the GKE cluster example, you can use the [cloudbuild.yaml](examples/to-gke-cluster/cloudbuild-to-private-gke-master.yaml) to 
+connect from [Google cloudbuild](https://cloud.google.com/build).
 
 ## installing the IAP proxy
 Install the simple-iap-proxy by downloading the latest release 
