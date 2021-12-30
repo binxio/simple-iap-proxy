@@ -5,23 +5,6 @@ inject the IAP proxy authorization header.
 
 ![simple-iap-proxy](./simple-iap-proxy.png)
 
-```
-Usage:
-simple-iap-proxy [command]
-
-Available Commands:
-client               starts a client side proxy, forwarding requests via an IAP endpoint
-gke-server           forwards requests to GKE clusters
-generate-certificate generates a self-signed localhost certificate
-
-Flags:
--k, --key-file string           key file for serving https
--c, --certificate-file string   certificate of the server
--d, --debug                     provide debug information
--P, --port int                  port to listen on (default 8080)
--p, --project string            google project id to use
-```
-
 
 ## simple-iap-proxy client
 
@@ -35,14 +18,21 @@ Usage:
 simple-iap-proxy client [flags]
 
 Flags:
--t, --target-url string         to forward requests to
--a, --iap-audience string       of the IAP application
--s, --service-account string    to impersonate
--u, --use-default-credentials   use default credentials instead of gcloud configuration
--C, --configuration string      name of gcloud configuration to use for credentials
--G, --to-gke                    proxy to GKE clusters in the project
--H, --to-host strings           proxy to these hosts, specified as regular expression
-    --http-protocol             listen on HTTP instead of HTTPS
+  -t, --target-url string         to forward requests to
+  -a, --iap-audience string       of the IAP application
+  -s, --service-account string    to impersonate
+  -u, --use-default-credentials   use default credentials instead of gcloud configuration
+  -C, --configuration string      name of gcloud configuration to use for credentials
+  -G, --to-gke                    proxy to GKE clusters in the project
+  -H, --to-host strings           proxy to these hosts, specified as regular expression
+      --http-protocol             proxy listens using HTTP instead of HTTPS
+
+Global Flags:
+  -k, --key-file string           key file for serving https
+  -c, --certificate-file string   certificate of the server
+  -p, --project string            google project id to use
+  -P, --port int                  port to listen on (default 8080)
+  -d, --debug                     provide debug information
 ```
 
 ## simple-iap-proxy gke-server
@@ -52,6 +42,13 @@ forwards the request to it. Reject requests for any other endpoint.
 ```
 Usage:
 simple-iap-proxy gke-server
+
+Global Flags:
+  -k, --key-file string           key file for serving https
+  -c, --certificate-file string   certificate of the server
+  -P, --port int                  port to listen on (default 8080)
+  -p, --project string            google project id to use
+  -d, --debug                     provide debug information
 ```
 
 
@@ -66,6 +63,10 @@ simple-iap-proxy generate-certificate [flags]
 
 Flags:
 --dns-name string   on the certificate (default "localhost")
+
+Global Flags:
+  -k, --key-file string           key file for serving https
+  -c, --certificate-file string   certificate of the server
 ```
 
 ## examples
