@@ -53,8 +53,8 @@ After the apply, the required IAP proxy command is printed:
 iap_proxy_command = <<EOT
 simple-iap-proxy client \
   --target-url https://iap-proxy.google.binx.dev \
-  --iap-audience 712731707077-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
-  --service-account iap-proxy-accessor@speeltuin-mvanholsteijn.iam.gserviceaccount.com \
+  --iap-audience 1231123123-j9onig1ofcgle7iogv8fceu04v8hriuv.apps.googleusercontent.com \
+  --service-account iap-proxy-accessor@my-project.iam.gserviceaccount.com \
   --key-file server.key \
   --certificate-file server.crt \
   --to-gke
