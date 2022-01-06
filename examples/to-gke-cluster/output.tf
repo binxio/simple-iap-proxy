@@ -1,4 +1,12 @@
-resource "google_secret_manager_secret" "simple_iap_policy" {
+locals {
+  exports = {
+    target-url      = format("https://%s", trimsuffix(google_dns_record_set.iap_proxy.name, "."))
+    audience        = google_iap_client.iap_proxy.client_id
+    service-account = google_service_account.iap_proxy_accessor.email
+  }
+}
+
+resource "google_secret_manager_secret" "simple_iap_proxy" {
   for_each  = local.exports
   secret_id = format("simple-iap-proxy-%s", each.key)
 
@@ -8,32 +16,24 @@ resource "google_secret_manager_secret" "simple_iap_policy" {
   depends_on = [google_project_service.secretmanager]
 }
 
-resource "google_secret_manager_secret_version" "simple_iap_policy" {
+resource "google_secret_manager_secret_version" "simple_iap_proxy" {
   for_each    = local.exports
-  secret      = google_secret_manager_secret.simple_iap_policy[each.key].id
+  secret      = google_secret_manager_secret.simple_iap_proxy[each.key].id
   secret_data = each.value
 }
 
-data "google_iam_policy" "simple_iap_policy" {
+data "google_iam_policy" "simple_iap_proxy" {
   binding {
     role    = "roles/secretmanager.secretAccessor"
     members = local.iap_accessors
   }
 }
 
-resource "google_secret_manager_secret_iam_policy" "policy" {
+resource "google_secret_manager_secret_iam_policy" "simple_iap_proxy" {
   for_each    = local.exports
-  project     = google_secret_manager_secret.simple_iap_policy[each.key].project
-  secret_id   = google_secret_manager_secret.simple_iap_policy[each.key].secret_id
-  policy_data = data.google_iam_policy.simple_iap_policy.policy_data
-}
-
-locals {
-  exports = {
-    target-url      = format("https://%s", trimsuffix(google_dns_record_set.iap_proxy.name, "."))
-    audience        = google_iap_client.iap_proxy.client_id
-    service-account = google_service_account.iap_proxy_accessor.email
-  }
+  project     = google_secret_manager_secret.simple_iap_proxy[each.key].project
+  secret_id   = google_secret_manager_secret.simple_iap_proxy[each.key].secret_id
+  policy_data = data.google_iam_policy.simple_iap_proxy.policy_data
 }
 
 output "curl_command" {
