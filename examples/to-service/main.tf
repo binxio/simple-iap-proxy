@@ -87,7 +87,7 @@ resource "google_compute_health_check" "httpbin" {
 
 resource "google_compute_instance_template" "httpbin" {
   name_prefix  = "httpbin-"
-  machine_type = "n2-standard-2"
+  machine_type = "e2-micro"
   region       = data.google_client_config.current.region
 
   disk {
