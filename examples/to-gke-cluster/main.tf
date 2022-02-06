@@ -87,7 +87,7 @@ resource "google_compute_health_check" "iap_proxy_https" {
 
 resource "google_compute_instance_template" "iap_proxy" {
   name_prefix  = "iap-proxy-"
-  machine_type = "n2-standard-2"
+  machine_type = "e2-micro"
   region       = data.google_client_config.current.region
 
   disk {
