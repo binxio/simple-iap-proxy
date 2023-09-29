@@ -132,7 +132,7 @@ func (p *Proxy) getCredentials(ctx context.Context) error {
 	var err error
 
 	if p.UseDefaultCredentials || !gcloudconfig.IsGCloudOnPath() {
-		p.credentials, err = google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform.read-only")
+		p.credentials, err = google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	} else {
 		p.credentials, err = gcloudconfig.GetCredentials(p.ConfigurationName)
 	}
