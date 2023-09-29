@@ -8,9 +8,6 @@ builds:
       - linux
       - windows
       - darwin
-archives:
-  - replacements:
-      386: i386
 checksum:
   name_template: 'checksums.txt'
 snapshot:
