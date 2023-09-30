@@ -5,3 +5,4 @@ terraform.tfstate*
 /.idea/
 simple-iap-proxy
 .auto.tfvars
+dist/
